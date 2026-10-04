@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Blood test - Vitamin D Tracker{% endblock %}
+{% block content %}
+<style>main{max-width:640px} table.h{width:100%;font-size:14px;border-collapse:collapse}
+table.h td{padding:8px 5px;border-bottom:1px solid var(--line)}
+table.h tr:first-child td{color:var(--muted);font-size:12px;font-weight:700}</style>
+<div class="card">
+  <h2 style="margin-top:0">Add a blood test result</h2>
+  <p class="muted">If you have a lab report for <b>25-OH vitamin D</b> (25(OH)D), enter it here. We store what the app
+  predicted for you at that moment next to your real value, so the model can be checked against real people.
+  Please add it soon after you get the report, while your profile is up to date.</p>
+  <form method="post">
+    <label>Result</label>
+    <input name="value" type="number" step="0.1" min="1" max="500" required>
+    <label>Unit written on the report</label>
+    <select name="unit" required>
+      <option value="">choose...</option>
+      <option value="nmol/L">nmol/L</option>
+      <option value="ng/mL">ng/mL</option>
+    </select>
+    <label>Date of the test</label>
+    <input name="taken_on" type="date" max="{{ today }}" required>
+    <label style="display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-weight:500">
+      <input name="consent" type="checkbox" value="yes" style="margin-top:3px">
+      <span>I agree that this value and my profile answers (without my name or email) may be used to test and
+      improve the model.</span></label>
+    <button type="submit">Save result</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">Your results</h3>
+  {% if rows %}
+  <table class="h">
+    <tr><td>Test date</td><td>Measured</td><td>App predicted</td><td>Difference</td><td>Model</td></tr>
+    {% for r in rows %}
+    <tr><td>{{ r['taken_on'] }}</td><td>{{ r['value_nmol'] }}</td>
+      <td>{{ r['predicted_nmol'] if r['predicted_nmol'] is not none else '-' }}</td>
+      <td>{{ ('%+.1f' % (r['predicted_nmol'] - r['value_nmol'])) if r['predicted_nmol'] is not none else '-' }}</td>
+      <td>{{ r['model_used'] or '-' }}</td></tr>
+    {% endfor %}
+  </table>
+  <p class="muted" style="font-size:12px">All values in nmol/L. Difference = predicted minus measured.</p>
+  {% else %}
+  <p class="muted">No results yet.</p>
+  {% endif %}
+  <p><a href="{{ url_for('dashboard') }}">Back to dashboard</a></p>
+</div>
+{% endblock %}

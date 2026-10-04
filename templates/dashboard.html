@@ -1,0 +1,1002 @@
+
+
+{% extends "base.html" %}
+{% block title %}Dashboard - Vitamin D Tracker{% endblock %}
+{% block content %}
+<style>
+  main{max-width:980px}
+  .stack{display:flex;flex-direction:column;gap:16px}
+  .stack>.card,.grid>.card{margin-bottom:0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .hello{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 2px}
+  .hello h2{margin:0;font-size:24px}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .tile{background:var(--tile);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .tile .k{font-size:12px;color:var(--muted)}
+  .tile .v{font-size:22px;font-weight:800;margin-top:2px}
+  .badge{display:inline-block;padding:4px 13px;border-radius:99px;font-size:12px;font-weight:800;letter-spacing:.5px}
+  .b-idle{background:#f1e4d3;color:#6b4b2f}
+  .b-auto{background:#dcfce7;color:#166534}
+  .b-man{background:#fef3c7;color:#92400e}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn-stop{background:#dc2626;box-shadow:0 6px 16px rgba(220,38,38,.3)}
+  .sw{display:flex;align-items:center;gap:8px;font-size:14px;color:#6b4423;margin:0;cursor:pointer;font-weight:600}
+  .sw input{width:auto;margin:0;transform:scale(1.3)}
+  .bar{background:var(--tile);border:1px solid var(--line);border-radius:99px;height:14px;overflow:hidden;margin:8px 0 4px}
+  .bar div{height:100%;width:0;transition:width .6s;border-radius:99px}
+  svg text{font-family:system-ui,sans-serif}
+  .track{stroke:var(--tile)}
+  .ringv{fill:var(--ink)} .rings{fill:var(--muted)}
+  table.h{width:100%;font-size:14px;border-collapse:collapse}
+  table.h td{padding:8px 5px;border-bottom:1px solid var(--line)}
+  table.h tr:first-child td{color:var(--muted);font-size:12px;font-weight:700}
+  .big{font-size:76px;font-weight:800;line-height:1}
+  .note{background:#fef3c7;color:#92400e;padding:10px 14px;border-radius:12px;font-size:14px;margin-top:12px}
+  .warn-t{color:#b45309}
+  .sun-card{background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%)}
+  .anchor{scroll-margin-top:84px}
+
+  /* buttons used on this page */
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  button.chip{margin:0;padding:6px 14px;font-size:13px;background:var(--tile);color:var(--ink);
+              box-shadow:none;border:1px solid var(--line)}
+  button.chip.on{background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;border-color:transparent}
+  button.ghost{margin:0;padding:8px 14px;font-size:13px;background:#fff;color:#c2410c;border:1.5px solid #fdba74;box-shadow:none}
+  button.ghost:hover{background:#fff7ed;filter:none}
+
+  /* 7-day chart */
+  .chartwrap{position:relative}
+  #tip{position:absolute;pointer-events:none;background:#3b1d08;color:#fff;padding:9px 12px;border-radius:10px;
+       font-size:12.5px;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.25);display:none;z-index:5;
+       min-width:180px;max-width:250px}
+  #dayChart .hit{cursor:pointer}
+
+  /* sessions */
+  .wrap-x{overflow-x:auto}
+  table.sess{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+  table.sess th{text-align:left;font-size:12px;color:var(--muted);font-weight:700;padding:8px 8px;border-bottom:1.5px solid var(--line)}
+  table.sess td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.sess tbody tr:hover{background:#fffaf2}
+  .d1{font-weight:700}
+  .d2{font-size:12px;color:var(--muted)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+  .mini{background:var(--tile);border:1px solid var(--line);border-radius:99px;height:8px;width:90px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px}
+  .mini i{display:block;height:100%;border-radius:99px}
+  .mode{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700}
+  .mode.auto{background:#dcfce7;color:#166534}
+  .mode.man{background:#fef3c7;color:#92400e}
+  .empty{text-align:center;padding:26px 10px;color:var(--muted);font-size:14px}
+
+  /* guide */
+  details.acc{border:1px solid var(--line);border-radius:14px;background:#fffdfa;margin-top:10px}
+  details.acc>summary{cursor:pointer;list-style:none;padding:13px 16px;font-weight:700;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  details.acc>summary::-webkit-details-marker{display:none}
+  details.acc>summary::after{content:"+";font-size:20px;color:var(--accent);font-weight:800}
+  details.acc[open]>summary::after{content:"\2212"}
+  details.acc .in{padding:0 16px 14px;font-size:14px;line-height:1.6}
+  details.acc ul{margin:6px 0 6px 18px;padding:0}
+  details.acc li{margin:4px 0}
+  .tri{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0}
+  @media(max-width:760px){.tri{grid-template-columns:1fr}}
+  .box{background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .box b{display:block;margin-bottom:3px}
+  table.g{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}
+  table.g th{text-align:left;font-size:12px;color:var(--muted);padding:6px 8px;border-bottom:1.5px solid var(--line)}
+  table.g td{padding:7px 8px;border-bottom:1px solid var(--line)}
+  .src{font-size:12px;color:var(--muted);margin-top:10px}
+  .red{color:#b91c1c;font-weight:700}
+
+  /* model accuracy */
+  td.m{background:linear-gradient(90deg,rgba(249,115,22,.22) var(--v),transparent var(--v));font-variant-numeric:tabular-nums}
+  table.cm td{text-align:center;padding:9px 8px;border:1px solid #fff;font-weight:700;font-variant-numeric:tabular-nums}
+  table.cm td small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+  table.cm th{font-size:12px;color:var(--muted);padding:6px 8px;text-align:center}
+  table.cm th.r{text-align:left}
+  dl.gl{margin:6px 0;font-size:13.5px;line-height:1.55}
+  dl.gl dt{font-weight:700;margin-top:6px}
+  dl.gl dd{margin:0 0 0 0;color:#5b4026}
+</style>
+
+{% if not p %}
+<div class="card">
+  <h3 style="margin-top:0">Hi {{ g.user['name'] }}</h3>
+  <p class="muted">Your profile is not set up yet. Answer a few questions so the advice is personal to you.</p>
+  <p><a href="{{ url_for('profile') }}">Set up profile</a></p>
+</div>
+{% else %}
+{% set default_model = pred.model_used if pred else 'base' %}
+<div class="stack">
+
+  <div class="hello"><h2>Hello, {{ g.user['name'] }} &#9728;&#65039;</h2>
+    <span class="muted">Skin type {{ p.skin_type }} &middot; {{ p.exposed_label }}</span></div>
+
+  <div class="grid">
+    <!-- LIVE UV -->
+    <div class="card" style="text-align:center">
+      <div class="muted" style="font-weight:700;letter-spacing:.6px">LIVE UV INDEX</div>
+      <div id="uv" class="big">--</div>
+      <div id="cat" style="font-size:24px;font-weight:800;margin-top:6px">waiting for ESP32...</div>
+      <div class="muted" id="meta" style="margin-top:8px"></div>
+      <div id="satNote" class="muted warn-t" style="display:none">Sensor is saturated (mV at maximum): reading is not reliable. Shade it with a white paper.</div>
+      <svg id="uvChart" viewBox="0 0 600 170" style="width:100%;margin-top:10px"></svg>
+      <div class="muted" style="font-size:12px">UV index, recent readings</div>
+    </div>
+
+    <!-- DAILY GOAL -->
+    <div class="card" style="text-align:center">
+      <div class="muted" style="font-weight:700;letter-spacing:.6px">TODAY'S VITAMIN D (ESTIMATE)</div>
+      <svg viewBox="0 0 140 140" style="width:190px;margin:10px auto 0;display:block">
+        <circle class="track" cx="70" cy="70" r="54" fill="none" stroke-width="14"/>
+        <circle id="ring" cx="70" cy="70" r="54" fill="none" stroke="#f97316" stroke-width="14"
+                stroke-linecap="round" stroke-dasharray="339.3" stroke-dashoffset="339.3"
+                transform="rotate(-90 70 70)" style="transition:stroke-dashoffset .6s"/>
+        <text id="ringVal" class="ringv" x="70" y="72" text-anchor="middle" font-size="28" font-weight="800">0</text>
+        <text id="ringSub" class="rings" x="70" y="92" text-anchor="middle" font-size="11">of -- IU</text>
+      </svg>
+      <div id="advice" style="margin-top:12px;font-size:15px;min-height:44px"></div>
+      <div class="tiles" style="text-align:left">
+        <div class="tile"><div class="k">Sun time today</div><div class="v" id="t_sun">--</div></div>
+        <div class="tile"><div class="k">Vitamin D at this UV</div><div class="v" id="t_rate">--</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION -->
+  <div class="card">
+    <div class="row">
+      <div><h3 style="margin:0 0 6px">Sun session</h3><span id="badge" class="badge b-idle">IDLE</span></div>
+      <label class="sw"><input type="checkbox" id="autoSw" onchange="setAuto(this.checked)">
+        Auto start / stop</label>
+    </div>
+    <div class="muted" id="autoHelp" style="margin-top:8px;font-size:13px">
+      Auto mode starts a session when UV stays 3 or above, and stops it when UV falls below 3.</div>
+
+    <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div class="tile"><div class="k">This session</div><div class="v" id="s_time">--</div></div>
+      <div class="tile"><div class="k">Session vitamin D</div><div class="v" id="s_iu">--</div></div>
+      <div class="tile"><div class="k">Still needed for goal</div><div class="v" id="needMin">--</div></div>
+      <div class="tile"><div class="k">Total for full goal</div><div class="v" id="totMin">--</div></div>
+      <div class="tile"><div class="k">Safe time left (burn limit)</div><div class="v" id="left">--</div></div>
+      <div class="tile"><div class="k">Goal remaining</div><div class="v" id="remIu">--</div></div>
+    </div>
+
+    <div style="margin-top:16px" class="muted">Today's UV dose vs your burn limit (skin type {{ p.skin_type }})</div>
+    <div class="bar"><div id="bar"></div></div>
+    <div id="barText" class="muted"></div>
+
+    <div id="warn" class="flash" style="display:none;margin-top:12px">
+      You have reached 80% of your burn limit today. Move to shade or cover up.</div>
+    <div class="row" style="margin-top:6px">
+      <button id="btn" type="button" onclick="toggle()">Start sun session</button>
+      <div id="err" class="muted warn-t"></div>
+    </div>
+  </div>
+
+  <!-- MODEL PREDICTION -->
+  <div class="card">
+    <h3 style="margin-top:0">Your vitamin D prediction (trained model)</h3>
+    {% if pred %}
+    <div class="row">
+      <span class="badge" style="background:{{ pred.color }};color:#3b1d08;font-size:14px">{{ pred.cat }}</span>
+      <span class="muted">typical error about &plusmn;{{ pred.mae }} nmol/L</span>
+    </div>
+
+    <!-- level scale: marker = predicted level, shaded part = likely range -->
+    <div style="position:relative;height:14px;margin-top:14px;border-radius:7px;overflow:hidden;display:flex">
+      <div style="width:41.7%;background:#fb923c"></div>
+      <div style="width:20.8%;background:#fcd34d"></div>
+      <div style="flex:1;background:#86efac"></div>
+      <div style="position:absolute;top:0;bottom:0;left:{{ pred.g_lo }}%;width:{{ pred.g_w }}%;background:rgba(59,29,8,.25)"></div>
+      <div style="position:absolute;top:0;bottom:0;left:calc({{ pred.g_pos }}% - 2px);width:4px;background:#3b1d08"></div>
+    </div>
+    <div class="muted" style="display:flex;justify-content:space-between;font-size:11px;margin-top:2px">
+      <span>0</span><span>50</span><span>75</span><span>120 nmol/L</span></div>
+
+    {% if pred.flag %}
+    <div class="note" style="margin-top:12px"><b>Higher risk of low vitamin D.</b>
+      Your predicted level is below {{ pred.flag_cut }} nmol/L. In the survey data, a flag like this caught about
+      {{ pred.flag_rec }}% of people whose blood level really was below 50 nmol/L, but about half of the flagged
+      people were actually fine. Only a blood test (25-hydroxy vitamin D) can tell for sure, so consider getting one.</div>
+    {% else %}
+    <div class="muted" style="margin-top:12px;font-size:13px">Not flagged as higher risk. This does <b>not</b> mean your
+      level is good: the model still misses about {{ 100 - pred.flag_rec }}% of people whose level is really low.</div>
+    {% endif %}
+    <p class="muted" style="font-size:12px;margin-top:6px">The model's predictions are pulled towards the average, so
+      real levels can be lower or higher than shown. Use this as a screening estimate, not a result.
+      <a href="#accuracy">See how accurate it is</a>.</p>
+
+    <div class="tiles">
+      <div class="tile"><div class="k">Predicted blood level</div><div class="v">{{ pred.level }} nmol/L</div></div>
+      <div class="tile"><div class="k">Likely range (&plusmn; typical error)</div><div class="v">{{ pred.low }} to {{ pred.high }}</div></div>
+      <div class="tile"><div class="k">Target level</div><div class="v">{{ pred.target }} nmol/L</div></div>
+      <div class="tile"><div class="k">Gap to target</div><div class="v">{{ pred.gap }} nmol/L</div></div>
+      <div class="tile"><div class="k">IU to close the gap (model)</div><div class="v">{{ pred.gap_iu }} IU</div></div>
+      <div class="tile"><div class="k">Standard recommended intake</div><div class="v">{{ pred.rda }} IU</div></div>
+      <div class="tile" style="grid-column:1/-1"><div class="k">Your daily sun goal
+        (the larger of the two above: {{ 'model gap' if pred.gap_iu > pred.rda else 'standard intake, because the model gap is small' }})</div>
+        <div class="v">{{ pred.goal_iu }} IU</div></div>
+      <div class="tile" style="grid-column:1/-1"><div class="k">Sun time for this goal at current UV (best case)</div>
+        <div class="v" id="predMin">--</div></div>
+    </div>
+
+    <p class="muted" style="margin-top:12px;font-size:13px">
+      {% if pred.model_used == 'sun' %}
+      Model used: age, sex, BMI, supplement, plus your time outdoors ({{ pred.outdoor_min }} min/day on average)
+      and your skin's reaction to sun (code {{ pred.skin_react }} of 5). Trained on NHANES 2013-2014 adults aged 20-59.
+      {% else %}
+      Model used: basic model with age, sex, BMI and supplement only. Trained on NHANES 2013-2014 adults aged 18-80.
+      {% endif %}
+    </p>
+
+    {% for n in pred.notes %}<div class="note">{{ n }}</div>{% endfor %}
+
+    {% if needs_update %}
+    <div class="note">Answer the 2 new "time outdoors" questions to get a better estimate.
+      <a href="{{ url_for('profile') }}">Update profile</a></div>
+    {% endif %}
+
+    {% if pred.what_if %}
+    <div class="muted" style="margin-top:14px;font-size:13px">What the survey data says if you spend more time
+      outdoors (9 am to 5 pm, no shade) on an average day:</div>
+    <table class="h" style="margin-top:6px">
+      <tr><td>Extra time outdoors</td><td>Predicted level</td></tr>
+      {% for w in pred.what_if %}
+      <tr><td>{{ ('+%d min' % w.extra) if w.extra else 'as you do now' }}</td><td>{{ w.level }} nmol/L</td></tr>
+      {% endfor %}
+    </table>
+    <p class="muted" style="font-size:12px;margin-top:6px">This is a pattern in US survey data, not proof that
+      more time outdoors will raise your level. The steps can look uneven because the model is a tree model.</p>
+    {% endif %}
+
+    {% else %}
+    <p class="muted">
+      {% if p.age < 18 or p.age > 80 %}
+      The prediction model was trained on adults aged 18 to 80, so it is not shown for age {{ p.age }}.
+      Your daily goal uses the standard recommended intake instead.
+      {% else %}
+      Model files not found, so the daily goal falls back to the standard recommended intake.
+      Run the training scripts and keep <code>vitd_model.joblib</code> and <code>vitd_model_sun.joblib</code> next to server.py.
+      {% endif %}
+    </p>
+    {% endif %}
+    <p class="muted" style="font-size:12px">Level: regression trained on US NHANES 2013-2014 adults (no season used,
+      so it also fits India, but it was not trained on Indian people). The step "gap to IU" uses about 2 nmol/L per
+      100 IU a day from published trials. The goal is never set below the standard recommended intake because the
+      model error is large, and the sun time is a best-case estimate. It is not a blood test or a diagnosis.</p>
+  </div>
+
+  <!-- PERSONAL SUN TABLE (research-based) -->
+  {% if cap %}
+  <div class="card sun-card">
+    <h3 style="margin-top:0">Your personal sun table (research-based)</h3>
+    <p class="muted" style="font-size:13px">This part is not from the survey data. It uses published sun-exposure rules and
+      your answers: skin type {{ p.skin_type }}, {{ p.exposed_label }}, sunscreen {{ p.sunscreen }}, age {{ p.age }}.
+      It shows what would happen <i>if</i> the UV index were 4, 7 or 10, so it also works when the sensor is off.</p>
+    <table class="h" style="margin-top:8px">
+      <tr><td>If UV index is</td><td>Vitamin D per minute</td><td>Minutes for your goal ({{ cap.goal }} IU)</td><td>Safe limit (80% of burn)</td><td></td></tr>
+      {% for r in cap.rows %}
+      <tr><td><b>{{ r.uv }}</b></td><td>{{ r.iu_min }} IU</td><td>{{ r.goal_min if r.goal_min is not none else '-' }} min</td>
+        <td>{{ r.safe_min }} min</td><td>{{ 'enough time' if r.ok else 'burn limit comes first' }}</td></tr>
+      {% endfor %}
+    </table>
+    <p style="font-size:14px;margin-top:10px">Most vitamin D you can safely make from sun in one day with this clothing:
+      <b>{{ cap.max_safe_iu }} IU</b>.</p>
+    {% if cap.max_safe_iu < cap.goal %}
+    <div class="note">With the skin you usually keep uncovered, sunlight alone cannot safely reach your goal. Showing more
+      skin (if that suits you) or getting vitamin D from food or a supplement can cover the rest. Please ask a doctor.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- DAILY CHART (hover + download) -->
+  <div class="card" id="daily">
+    <div class="row">
+      <h3 id="dayTitle" style="margin:0">Vitamin D from sun: last 7 days (IU)</h3>
+      <div class="chips" id="rangeChips">
+        <button type="button" class="chip on" data-n="7" onclick="setRange(7)">7 days</button>
+        <button type="button" class="chip" data-n="14" onclick="setRange(14)">14 days</button>
+        <button type="button" class="chip" data-n="30" onclick="setRange(30)">30 days</button>
+      </div>
+    </div>
+    <div class="muted" style="font-size:13px;margin-top:6px">Move the mouse over (or tap) a bar for the details of that day.</div>
+
+    <div class="chartwrap" id="chartwrap" style="margin-top:8px">
+      <svg id="dayChart" viewBox="0 0 600 210" style="width:100%;display:block"></svg>
+      <div id="tip"></div>
+    </div>
+    <div class="muted" style="font-size:12px">Dashed orange line = daily goal &middot; blue dotted line = average of the period &middot; green bar = goal reached.</div>
+    <div id="dayEmpty" class="note" style="display:none">No finished sun sessions in this period yet. Start a session (or switch on Auto mode) when UV is 3 or above.</div>
+
+    <div class="tiles" id="dayStats" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"></div>
+
+    <div class="chips" style="margin-top:14px">
+      <button type="button" class="ghost" onclick="downloadChartPng()">&#11015; Download chart (PNG with details)</button>
+      <button type="button" class="ghost" onclick="downloadDailyCsv()">&#11015; Download data (CSV)</button>
+    </div>
+  </div>
+
+  <!-- PAST SESSIONS -->
+  <div class="card" id="sessions">
+    <div class="row">
+      <h3 style="margin:0">Past sessions</h3>
+      <div class="chips" id="sessChips">
+        <button type="button" class="chip on" data-f="all" onclick="setSessFilter('all')">All</button>
+        <button type="button" class="chip" data-f="auto" onclick="setSessFilter('auto')">Auto</button>
+        <button type="button" class="chip" data-f="manual" onclick="setSessFilter('manual')">Manual</button>
+      </div>
+    </div>
+    <div class="tiles" id="sessStats" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"></div>
+    <div class="wrap-x" style="margin-top:12px">
+      <table class="sess" id="hist">
+        <thead><tr><th>When</th><th>Duration</th><th>UV (avg / max)</th><th>Burn limit used</th><th>Vitamin D</th><th>Mode</th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <div id="noHist" class="empty" style="display:none"></div>
+    <div class="chips" style="margin-top:12px">
+      <button type="button" class="ghost" id="moreBtn" onclick="toggleSessAll()" style="display:none">Show all sessions</button>
+      <button type="button" class="ghost" onclick="downloadSessionsCsv()">&#11015; Download sessions (CSV)</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:8px">"Burn limit used" is the share of your personal burn dose
+      (80% is the warning level). "% of daily goal" compares the session's vitamin D with your daily goal.</p>
+  </div>
+
+  <!-- VITAMIN D GUIDE -->
+  <div class="card anchor" id="guide">
+    <h3 style="margin-top:0">Vitamin D guide</h3>
+    <p class="muted" style="margin:0">Short and simple answers: what it does, how to get it, what low levels mean, and what to eat.</p>
+
+    <details class="acc" open>
+      <summary>What is vitamin D and why do we need it?</summary>
+      <div class="in">
+        <p>Vitamin D helps your gut absorb <b>calcium and phosphorus</b>, so bones and teeth stay strong. It also supports
+          <b>muscle function</b> and the <b>immune system</b>. Your body makes it when UVB rays from the sun hit bare skin.
+          Some foods and supplements also give it.</p>
+        <p>The blood test that shows your vitamin D status is called <b>25-hydroxy vitamin D, or 25(OH)D</b>
+          (written in nmol/L or ng/mL; 1 ng/mL = 2.5 nmol/L).</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>How do we get vitamin D?</summary>
+      <div class="in">
+        <div class="tri">
+          <div class="box"><b>&#9728;&#65039; Sun</b>For most people the main source. UVB turns a compound in your skin into vitamin D3.
+            Needs UV index about 3 or more. Window glass blocks UVB, so sitting in sun behind glass does not count.</div>
+          <div class="box"><b>&#127869;&#65039; Food</b>Few foods have much: fatty fish, egg yolk, liver, UV-exposed mushrooms and
+            fortified foods (some milk, oils and cereals).</div>
+          <div class="box"><b>&#128138; Supplements</b>Vitamin D3 (or D2) tablets, drops or sachets. Best taken after a blood test
+            and a doctor's advice.</div>
+        </div>
+        <p><b>Things that reduce what your skin makes:</b> sunscreen, covering clothes, darker skin, older age, staying indoors,
+          and low UV (early morning, evening, cloudy or polluted air). Studies report that low vitamin D is common in India
+          even though it is sunny, mainly because of indoor lifestyles, clothing and diet.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>What do the blood levels mean?</summary>
+      <div class="in">
+        <table class="g">
+          <tr><th>25(OH)D level</th><th>Usually called</th></tr>
+          <tr><td>below 30 nmol/L (12 ng/mL)</td><td class="red">Deficient</td></tr>
+          <tr><td>30 to 49 nmol/L</td><td>Inadequate for some people</td></tr>
+          <tr><td>50 to 74 nmol/L</td><td>Enough for most people (many guidelines)</td></tr>
+          <tr><td>75 nmol/L (30 ng/mL) or more</td><td>The target this app uses (some guidelines prefer this level)</td></tr>
+          <tr><td>above 125 nmol/L (50 ng/mL)</td><td>May be harmful, mostly from too many supplements</td></tr>
+        </table>
+        <p class="muted" style="font-size:12.5px">Medical groups do not fully agree on the cut-offs, so ask your doctor how to read your own result.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>What happens if vitamin D is low?</summary>
+      <div class="in">
+        <ul>
+          <li><b>Children:</b> rickets, which means soft, weak bones, bowed legs and slow growth.</li>
+          <li><b>Adults:</b> osteomalacia: bone pain, tenderness and muscle weakness. Low vitamin D also makes osteoporosis worse.</li>
+          <li><b>Older adults:</b> higher risk of falls and broken bones.</li>
+          <li>Over a long time, less calcium is absorbed, so the body takes calcium from the bones.</li>
+          <li>Tiredness and body aches are often mentioned, but they have many other causes. Many people with low levels feel
+            nothing, so <b>only a blood test confirms it</b>.</li>
+        </ul>
+        <p><b>Higher risk:</b> darker skin, little sun or covered clothing, always using sunscreen, older age, higher body weight,
+          pregnancy and breastfeeding, and conditions such as celiac, Crohn's, kidney or liver disease, or some medicines.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>How can I fix it? (ways to fulfil your need)</summary>
+      <div class="in">
+        <ol style="margin:6px 0 6px 18px;padding:0">
+          <li><b>Sensible sun:</b> short sessions around midday when the UV index is 3 or more, with arms and legs uncovered if that suits
+            you. Stop well before your skin turns pink. This app's burn limit helps with that.</li>
+          <li><b>Food:</b> see the food table below. Food alone rarely reaches the daily need unless you eat fatty fish often.</li>
+          <li><b>Fortified foods:</b> some milk, edible oils and cereals have vitamin D added. Check the label.</li>
+          <li><b>Supplements:</b> the standard daily intake is 600 IU (15 mcg), and 800 IU after age 70. For a proven deficiency a doctor may
+            prescribe more for a limited time. Taking it with a meal that contains some fat may help absorption.</li>
+          <li><b>Re-check:</b> if you are treated for low levels, a doctor usually repeats the blood test after a few months.</li>
+        </ol>
+        {% if cap %}
+        <div class="note">Your daily goal is <b>{{ cap.goal }} IU</b>. With your usual clothing and sunscreen, sun can safely give about
+          <b>{{ cap.max_safe_iu }} IU</b> a day{% if cap.max_safe_iu < cap.goal %}, so the rest has to come from food, fortified foods or
+          a supplement (ask a doctor){% endif %}.</div>
+        {% endif %}
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>Diet: which foods have vitamin D?</summary>
+      <div class="in">
+        <div class="wrap-x"><table class="g">
+          <tr><th>Food</th><th>Serving</th><th>About (IU)</th><th>Type</th></tr>
+          <tr><td>Cod liver oil</td><td>1 tablespoon</td><td>1,300+</td><td>Fish</td></tr>
+          <tr><td>Trout (cooked)</td><td>85 g</td><td>about 650</td><td>Fish</td></tr>
+          <tr><td>Salmon (cooked)</td><td>85 g</td><td>about 570</td><td>Fish</td></tr>
+          <tr><td>UV-exposed mushrooms</td><td>&frac12; cup</td><td>about 350 (varies a lot)</td><td>Vegan</td></tr>
+          <tr><td>Fortified milk</td><td>1 cup (240 ml)</td><td>about 100 to 120</td><td>Dairy</td></tr>
+          <tr><td>Fortified cereal</td><td>1 serving</td><td>about 80 (check label)</td><td>Veg</td></tr>
+          <tr><td>Sardines (canned)</td><td>2 fish</td><td>about 45</td><td>Fish</td></tr>
+          <tr><td>Egg</td><td>1 large (the yolk has it)</td><td>about 40</td><td>Egg</td></tr>
+          <tr><td>Beef liver (cooked)</td><td>85 g</td><td>about 40</td><td>Meat</td></tr>
+        </table></div>
+        <ul>
+          <li>Numbers are rough values from US food tables. Indian products and fortification differ, so read labels.</li>
+          <li>A vegetarian diet usually gives little vitamin D. Sun, fortified foods or a supplement matter more.</li>
+          <li>Calcium-rich foods (milk, curd, ragi, leafy greens) work together with vitamin D for bones.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>Can I take too much?</summary>
+      <div class="in">
+        <p>Yes, from <b>supplements</b> (not from sun). The usual upper limit for adults is about <b>4,000 IU (100 mcg) a day</b>
+          unless a doctor prescribes more. Too much can raise blood calcium and cause nausea, vomiting, weakness, frequent urination and
+          kidney problems. Do not take large doses on your own.</p>
+        <p>Sun cannot cause this, because the skin stops making extra vitamin D, but too much sun still causes sunburn and raises skin
+          cancer risk.</p>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>Limitations of this app</summary>
+      <div class="in">
+        <ul>
+          <li>It gives <b>estimates only</b>. It is not a medical device, not a blood test and not a diagnosis.</li>
+          <li>The level prediction has a typical error of about 17 to 19 nmol/L, and uses only a few inputs. It does not know your food,
+            genes, medicines, health conditions or season.</li>
+          <li>The model learned from <b>US adults (NHANES 2013-2014)</b>, not from Indian people, so it may be less accurate for you.</li>
+          <li>Time outdoors and skin reaction are what you tell the app (self-reported).</li>
+          <li>The UV sensor is hobby grade. It reads at most about UV 7 before it saturates, and the sun maths uses approximate constants.</li>
+          <li>Your daily goal is never below the standard intake (600 IU, 800 IU above age 70), because the model error is large.</li>
+          <li>The prediction is shown only for ages 18 to 80, and the sun model only for ages 20 to 59.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>When should I see a doctor?</summary>
+      <div class="in">
+        <ul>
+          <li>Bone pain, muscle weakness or frequent fractures or falls.</li>
+          <li>You are pregnant, breastfeeding, elderly, or have kidney, liver or gut disease, or take long-term medicines.</li>
+          <li>The "Higher risk" flag appears for you, or you want to start vitamin D tablets (ask for a 25(OH)D blood test first).</li>
+          <li>For babies and children, always ask the doctor about the dose.</li>
+        </ul>
+      </div>
+    </details>
+    <p class="src">General facts follow public health guidance such as the US NIH Office of Dietary Supplements and the Endocrine Society.
+      This is education, not medical advice.</p>
+  </div>
+
+  <!-- MODEL ACCURACY -->
+  <div class="card anchor" id="accuracy">
+    <h3 style="margin-top:0">How accurate is our model?</h3>
+    <p class="muted" style="margin:0">All numbers come from 5-fold cross-validation on NHANES 2013-2014 (US adults): every person is predicted by a model
+      that never saw them. They are <b>not</b> tested on Indian people.</p>
+
+    {% if pred %}<p style="font-size:14px;margin:10px 0 0">Your profile is scored by the
+      <b>{{ 'sun-habits' if pred.model_used == 'sun' else 'basic' }} model</b>.</p>{% endif %}
+
+    <div class="chips" style="margin-top:10px">
+      {% for k, m in report.models.items() %}
+      <button type="button" class="chip mtab {{ 'on' if k == default_model }}" data-k="{{ k }}" onclick="showModel('{{ k }}')">{{ m.title }}</button>
+      {% endfor %}
+    </div>
+
+    {% set labels = ['LOW (below 50)', 'MIDDLE (50 to 75)', 'HIGHER (75+)'] %}
+    {% for k, m in report.models.items() %}
+    <div class="mpanel" data-k="{{ k }}" style="display:{{ 'block' if k == default_model else 'none' }}">
+      <p class="muted" style="font-size:13px;margin:10px 0 0">{{ m.title }}: {{ m.inputs }}. Tested on {{ '{:,}'.format(m.people) }} people.</p>
+
+      <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+        <div class="tile"><div class="k">Typical error (MAE)</div><div class="v">{{ m.mae }} nmol/L</div></div>
+        <div class="tile"><div class="k">R&sup2; (variation explained)</div><div class="v">{{ '%.2f'|format(m.r2) }}</div></div>
+        <div class="tile"><div class="k">Within &plusmn;10 nmol/L</div><div class="v">{{ m.w10 }}%</div></div>
+        <div class="tile"><div class="k">Within &plusmn;20 nmol/L</div><div class="v">{{ m.w20 }}%</div></div>
+      </div>
+
+      <h4 style="margin:18px 0 4px">Yes / no questions</h4>
+      <div class="muted" style="font-size:13px">For each question the model says "yes, below this level" or "no". The bars show the score.</div>
+      <div class="wrap-x"><table class="g" style="min-width:560px">
+        <tr><th>Question</th><th>People who truly are below</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>Specificity</th><th>F1</th><th>ROC AUC</th></tr>
+        {% for c in m.cuts %}
+        <tr><td><b>{{ c.q }}</b></td><td>{{ c.prev }}%</td>
+          <td class="m" style="--v:{{ c.acc }}%">{{ '%.1f'|format(c.acc) }}%</td>
+          <td class="m" style="--v:{{ c.prec }}%">{{ '%.1f'|format(c.prec) }}%</td>
+          <td class="m" style="--v:{{ c.rec }}%">{{ '%.1f'|format(c.rec) }}%</td>
+          <td class="m" style="--v:{{ c.spec }}%">{{ '%.1f'|format(c.spec) }}%</td>
+          <td class="m" style="--v:{{ c.f1 }}%">{{ '%.1f'|format(c.f1) }}%</td>
+          <td>{{ '%.2f'|format(c.auc) }}</td></tr>
+        {% endfor %}
+      </table></div>
+      <p class="muted" style="font-size:12.5px">Look at the first row: accuracy is high ({{ '%.0f'|format(m.cuts[0].acc) }}%) only because most people are not deficient.
+        The model finds <b>none</b> of the deficient people (recall 0%), so accuracy alone can fool you.</p>
+
+      <h4 style="margin:18px 0 4px">The "Higher risk" flag</h4>
+      <p style="font-size:14px;margin:0">Flag when predicted level is below <b>{{ m.flag.cut }} nmol/L</b>:
+        it catches <b>{{ m.flag.rec }}%</b> of people really below 50 nmol/L (recall), and
+        <b>{{ m.flag.prec }}%</b> of the flagged people truly are below 50 (precision). So about half of the flags are false alarms,
+        which is acceptable for a screening hint that only says "consider a blood test".</p>
+
+      <h4 style="margin:18px 0 4px">The 3 level groups shown on the dashboard</h4>
+      <p class="muted" style="font-size:13px;margin:0">Overall accuracy {{ m.acc3 }}% (always guessing the commonest group gives {{ m.base3 }}%).
+        Balanced accuracy {{ m.bal3 }}%, macro F1 {{ m.f13 }}%.</p>
+      <div class="wrap-x"><table class="g" style="min-width:420px">
+        <tr><th>Group</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
+        {% for gr in m.groups %}
+        <tr><td><b>{{ gr.name }}</b></td>
+          <td class="m" style="--v:{{ gr.prec }}%">{{ '%.1f'|format(gr.prec) }}%</td>
+          <td class="m" style="--v:{{ gr.rec }}%">{{ '%.1f'|format(gr.rec) }}%</td>
+          <td class="m" style="--v:{{ gr.f1 }}%">{{ '%.1f'|format(gr.f1) }}%</td></tr>
+        {% endfor %}
+      </table></div>
+
+      <div class="muted" style="font-size:13px;margin-top:10px">Confusion matrix: each row is what the blood test really showed, each column is what the model said
+        (percent of that row, with the number of people below).</div>
+      <div class="wrap-x"><table class="cm" style="width:100%;min-width:420px;border-collapse:collapse;margin-top:6px">
+        <tr><th class="r"></th><th>Model: LOW</th><th>Model: MIDDLE</th><th>Model: HIGHER</th></tr>
+        {% for row in m.cm %}{% set rs = row|sum %}
+        <tr><th class="r">Really {{ labels[loop.index0] }}</th>
+          {% for cell in row %}<td style="background:rgba(249,115,22,{{ '%.2f'|format(0.06 + 0.6 * cell / rs) }})">{{ (cell / rs * 100)|round|int }}%<small>{{ cell }} people</small></td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </table></div>
+    </div>
+    {% endfor %}
+
+    <div class="note" style="background:#ecfdf5;color:#065f46">
+      <b>In plain words:</b>
+      <ul style="margin:6px 0 0 18px;padding:0">
+        <li>The model is <b>fair at ranking risk</b> (ROC AUC about 0.72 to 0.76), but it cannot tell your exact level: the typical error is about 17 to 19 nmol/L.</li>
+        <li>It is <b>not a deficiency detector</b>: it never predicts levels below 30 nmol/L.</li>
+        <li>Its "LOW" label is right most of the time it appears (precision 56 to 64%), but it misses most low people (recall 10 to 26%). The "Higher risk" flag is more sensitive (about 80%) at the price of false alarms.</li>
+        <li>It learned from US data. Use it as a hint, and get a blood test to know your real level.</li>
+      </ul>
+    </div>
+
+    <details class="acc">
+      <summary>What do these words mean?</summary>
+      <div class="in"><dl class="gl">
+        <dt>MAE (typical error)</dt><dd>The average gap between the predicted and the real blood level, in nmol/L. Smaller is better.</dd>
+        <dt>R&sup2;</dt><dd>How much of the differences between people the model explains. 0 = nothing, 1 = everything. Ours is about 0.19 to 0.25, which is low.</dd>
+        <dt>Accuracy</dt><dd>Share of all people the model got right. Can look good when one group is much bigger than the other.</dd>
+        <dt>Precision</dt><dd>Of the people the model called "low", how many really were low.</dd>
+        <dt>Recall (sensitivity)</dt><dd>Of the people who really were low, how many the model found.</dd>
+        <dt>Specificity</dt><dd>Of the people who were not low, how many the model correctly left alone.</dd>
+        <dt>F1</dt><dd>One number that balances precision and recall.</dd>
+        <dt>ROC AUC</dt><dd>How well the model ranks people from lower to higher risk, whatever cut-off is used. 0.5 = guessing, 1.0 = perfect.</dd>
+        <dt>Cross-validation</dt><dd>The data is split into 5 parts; each part is predicted by a model trained on the other 4, so the results are honest.</dd>
+      </dl></div>
+    </details>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="card">
+    <h3 style="margin-top:0">Your profile</h3>
+    <table style="width:100%;font-size:15px;border-collapse:collapse">
+      <tr><td class="muted">Age</td><td>{{ p.age }}</td></tr>
+      <tr><td class="muted">BMI</td><td>{{ p.bmi }}</td></tr>
+      <tr><td class="muted">Skin type</td><td>{{ p.skin_type }} (score {{ p.quiz_score }}/20)</td></tr>
+      <tr><td class="muted">Usually uncovered</td><td>{{ p.exposed_label }}</td></tr>
+      <tr><td class="muted">Sunscreen</td><td>{{ p.sunscreen }}</td></tr>
+      <tr><td class="muted">Vitamin D supplement</td><td>{{ p.supplement }}</td></tr>
+      <tr><td class="muted">Outdoors 9-5 (work / other days)</td>
+          <td>{% if p.outdoor_wd is not none %}{{ p.outdoor_wd }} / {{ p.outdoor_we }} min{% else %}not answered yet{% endif %}</td></tr>
+    </table>
+    <p><a href="{{ url_for('profile') }}">Edit profile</a> &middot;
+       <a href="{{ url_for('labs') }}">Add a blood test result</a> &middot;
+       <a href="{{ url_for('about') }}">How these numbers are made</a></p>
+    <p class="muted" style="font-size:12px">Estimates only, not medical advice. Based on a simplified
+    skin-type quiz and approximate dose models. Daily goal comes from the model prediction above.</p>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {line:css('--line'), muted:css('--muted'), ink:css('--ink'), accent:css('--accent'), ok:css('--ok'), bad:css('--bad')};
+const FONT = 'system-ui, Segoe UI, Arial, sans-serif';
+const USER = {{ g.user['name']|tojson }};
+let active = false;
+let uvAge = 0;           // seconds since the last sensor reading
+let GOAL = 0;            // daily goal (IU), from /api/session/status
+let lastDaily = null, RANGE = 7, hoverI = -1;
+let lastTodayIu = 0, lastTodayMin = 0;
+let SESS = [], sessFilter = 'all', sessAll = false;
+
+function category(u){ return u<3 ? ["LOW","#16a34a"] : u<6 ? ["MODERATE","#ca8a04"] : u<8 ? ["HIGH","#ea580c"] : ["VERY HIGH","#dc2626"]; }
+function mmss(s){ const m=Math.floor(s/60), x=s%60; return m+'m '+String(x).padStart(2,'0')+'s'; }
+function fmtMin(m){
+  if(m===null || m===undefined) return '--';
+  if(m<=0) return '0 min';
+  if(m>=60){ return Math.floor(m/60)+' h '+String(Math.round(m%60)).padStart(2,'0')+' min'; }
+  return (m<10 ? m.toFixed(1) : Math.round(m))+' min';
+}
+function fmtAgo(s){
+  if(s<60) return Math.round(s)+' s';
+  if(s<3600) return Math.round(s/60)+' min';
+  if(s<86400) return (s/3600).toFixed(1)+' h';
+  return (s/86400).toFixed(1)+' days';
+}
+function niceMax(v){
+  const p=Math.pow(10, Math.floor(Math.log10(v))), f=v/p;
+  return (f<=1 ? 1 : f<=2 ? 2 : f<=2.5 ? 2.5 : f<=5 ? 5 : 10)*p;
+}
+function longDate(iso){
+  return new Date(iso+'T00:00:00').toLocaleDateString([], {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+}
+function csvEsc(v){ v=String(v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
+function saveBlob(blob, name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
+}
+function saveCsv(name, rows){
+  const text = rows.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  saveBlob(new Blob(['\ufeff'+text], {type:'text/csv;charset=utf-8'}), name);
+}
+
+/* ---------------- live UV chart (plain SVG, no internet needed) ---------------- */
+function drawUv(rows){
+  const svg = $('uvChart');
+  if(rows.length<2){ svg.innerHTML=`<text x="300" y="85" fill="${C.muted}" text-anchor="middle" font-size="14">waiting for readings...</text>`; return; }
+  const W=600,H=170,L=30,R=8,T=10,B=22;
+  const t1=rows[rows.length-1].ts, t0=rows[0].ts;
+  const ymax=Math.max(9, Math.ceil(Math.max(...rows.map(r=>r.uvi))/3)*3);
+  const x=t=>L+(t-t0)/Math.max(t1-t0,1)*(W-L-R);
+  const y=v=>T+(1-v/ymax)*(H-T-B);
+  let s='';
+  for(let v=0; v<=ymax; v+=3){
+    s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${C.line}" stroke-dasharray="3 4"/>`;
+    s+=`<text x="${L-6}" y="${y(v)+4}" fill="${C.muted}" font-size="11" text-anchor="end">${v}</text>`;
+  }
+  const pts=rows.map(r=>x(r.ts).toFixed(1)+','+y(r.uvi).toFixed(1));
+  s+=`<polygon points="${L},${y(0)} ${pts.join(' ')} ${x(t1).toFixed(1)},${y(0)}" fill="${C.accent}" fill-opacity=".18"/>`;
+  s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${C.accent}" stroke-width="2.5" stroke-linejoin="round"/>`;
+  s+=`<text x="${L}" y="${H-5}" fill="${C.muted}" font-size="11">-${Math.round((t1-t0)/60)} min</text>`;
+  const right = uvAge>20 ? 'last reading '+fmtAgo(uvAge)+' ago (sensor offline)' : 'now';
+  s+=`<text x="${W-R}" y="${H-5}" fill="${uvAge>20?'#b45309':C.muted}" font-size="11" text-anchor="end">${right}</text>`;
+  svg.innerHTML=s;
+}
+
+/* ---------------- daily chart: hover, stats, downloads ---------------- */
+function dayRows(d){
+  return d.days.map(x => x.today
+    ? Object.assign({}, x, {iu: Math.max(x.iu, lastTodayIu), min: Math.max(x.min, +lastTodayMin.toFixed(1))})
+    : x);
+}
+
+function dailyInner(d, rows, hover, forExport){
+  const W=600,H=210,L=44,R=12,T=26,B=34;
+  const goal=d.goal, n=rows.length;
+  const avg=rows.reduce((a,r)=>a+r.iu,0)/n;
+  const ymax=niceMax(Math.max(goal*1.25, ...rows.map(r=>r.iu), 100));
+  const y=v=>T+(1-v/ymax)*(H-T-B);
+  const bw=(W-L-R)/n;
+  let s='';
+  for(let i=0;i<=4;i++){
+    const v=ymax*i/4;
+    s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${C.line}" ${i?'stroke-dasharray="3 4"':''}/>`;
+    s+=`<text x="${L-6}" y="${y(v)+4}" fill="${C.muted}" font-size="10" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  rows.forEach((r,i)=>{
+    const bx=L+i*bw+bw*0.16, w=bw*0.68;
+    const col=(goal>0 && r.iu>=goal) ? C.ok : C.accent;
+    const op=(hover===i || r.today) ? 1 : 0.72;
+    s+=`<rect x="${bx.toFixed(1)}" y="${y(r.iu).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(y(0)-y(r.iu),2).toFixed(1)}" rx="${Math.min(6,w/2).toFixed(1)}" fill="${col}" opacity="${op}"/>`;
+    if(hover===i){ s+=`<rect x="${(L+i*bw).toFixed(1)}" y="${T-6}" width="${bw.toFixed(1)}" height="${(H-T-B+6).toFixed(1)}" fill="${C.accent}" opacity=".08"/>`; }
+    if(n<=14){ s+=`<text x="${(bx+w/2).toFixed(1)}" y="${(y(r.iu)-5).toFixed(1)}" fill="${C.ink}" font-size="${n<=7?11:9}" text-anchor="middle">${Math.round(r.iu)}</text>`; }
+    if(n<=7 || i%3===0 || i===n-1){
+      const lab = n<=7 ? r.label : r.date.slice(8);
+      s+=`<text x="${(bx+w/2).toFixed(1)}" y="${H-12}" fill="${r.today?C.ink:C.muted}" font-size="${n<=7?11:10}" text-anchor="middle" ${r.today?'font-weight="700"':''}>${lab}</text>`;
+    }
+  });
+  s+=`<line x1="${L}" x2="${W-R}" y1="${y(avg).toFixed(1)}" y2="${y(avg).toFixed(1)}" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="2 4"/>`;
+  s+=`<text x="${L+4}" y="${(y(avg)-4).toFixed(1)}" fill="#2563eb" font-size="10">avg ${Math.round(avg)} IU</text>`;
+  s+=`<line x1="${L}" x2="${W-R}" y1="${y(goal).toFixed(1)}" y2="${y(goal).toFixed(1)}" stroke="#b45309" stroke-dasharray="6 5"/>`;
+  s+=`<text x="${W-R}" y="${(y(goal)-5).toFixed(1)}" fill="#b45309" font-size="11" text-anchor="end">goal ${goal} IU</text>`;
+  if(!forExport){
+    rows.forEach((r,i)=>{
+      s+=`<rect class="hit" data-i="${i}" x="${(L+i*bw).toFixed(1)}" y="${T-10}" width="${bw.toFixed(1)}" height="${(H-T-B+10).toFixed(1)}" fill="transparent"/>`;
+    });
+  }
+  return s;
+}
+
+function dayStats(rows, goal){
+  const total=rows.reduce((a,r)=>a+r.iu,0), mins=rows.reduce((a,r)=>a+r.min,0);
+  const hit=rows.filter(r=>goal>0 && r.iu>=goal).length;
+  const best=rows.reduce((b,r)=>r.iu>b.iu?r:b, rows[0]);
+  return {total, mins, hit, avg:total/rows.length, best, n:rows.length};
+}
+
+function drawDaily(){
+  if(!lastDaily) return;
+  const rows=dayRows(lastDaily);
+  $('dayChart').innerHTML=dailyInner(lastDaily, rows, hoverI, false);
+  const st=dayStats(rows, lastDaily.goal);
+  $('dayEmpty').style.display = st.total>0 ? 'none' : 'block';
+  $('dayStats').innerHTML =
+    `<div class="tile"><div class="k">Total vitamin D</div><div class="v">${Math.round(st.total)} IU</div></div>`+
+    `<div class="tile"><div class="k">Average per day</div><div class="v">${Math.round(st.avg)} IU</div></div>`+
+    `<div class="tile"><div class="k">Days goal reached</div><div class="v">${st.hit} of ${st.n}</div></div>`+
+    `<div class="tile"><div class="k">Best day</div><div class="v">${st.best.iu>0 ? Math.round(st.best.iu)+' IU' : '--'}</div></div>`+
+    `<div class="tile"><div class="k">Total time in sun</div><div class="v">${fmtMin(st.mins)}</div></div>`;
+}
+
+function tipHtml(r, goal){
+  const pct=goal>0 ? Math.round(r.iu/goal*100) : 0, diff=Math.round(goal-r.iu);
+  return `<b>${longDate(r.date)}${r.today?' (today)':''}</b><br>`+
+    `Vitamin D: <b>${Math.round(r.iu)} IU</b> (${pct}% of goal)<br>`+
+    `Time in sun: ${fmtMin(r.min)} &middot; ${r.sessions} session${r.sessions===1?'':'s'}<br>`+
+    `UV: ${r.sessions ? 'avg '+r.avg_uvi+', max '+r.max_uvi : 'no sessions'}<br>`+
+    (diff<=0 ? 'Goal reached &#10003;' : diff+' IU short of the goal');
+}
+function showTip(i, e){
+  const rows=dayRows(lastDaily), tip=$('tip'), wrap=$('chartwrap'), r=wrap.getBoundingClientRect();
+  tip.innerHTML=tipHtml(rows[i], lastDaily.goal);
+  tip.style.display='block';
+  let x=e.clientX-r.left+14, y=e.clientY-r.top-12;
+  if(x+tip.offsetWidth>r.width) x=e.clientX-r.left-tip.offsetWidth-14;
+  if(x<0) x=4;
+  if(y+tip.offsetHeight>r.height) y=r.height-tip.offsetHeight-4;
+  if(y<0) y=4;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+}
+function hideTip(){ $('tip').style.display='none'; if(hoverI!==-1){ hoverI=-1; drawDaily(); } }
+function onChartPoint(e){
+  if(!lastDaily) return;
+  const t=e.target.closest ? e.target.closest('[data-i]') : null;
+  if(!t){ hideTip(); return; }
+  const i=+t.dataset.i;
+  if(i!==hoverI){ hoverI=i; drawDaily(); }
+  showTip(i, e);
+}
+$('dayChart').addEventListener('mousemove', onChartPoint);
+$('dayChart').addEventListener('click', onChartPoint);
+$('dayChart').addEventListener('mouseleave', hideTip);
+
+async function setRange(n){
+  RANGE=n; hoverI=-1;
+  document.querySelectorAll('#rangeChips .chip').forEach(b=>b.classList.toggle('on', +b.dataset.n===n));
+  $('dayTitle').textContent='Vitamin D from sun: last '+n+' days (IU)';
+  await loadDaily();
+}
+
+function downloadDailyCsv(){
+  if(!lastDaily) return;
+  const goal=lastDaily.goal, rows=dayRows(lastDaily);
+  const out=[['date','day','vitamin_d_iu','daily_goal_iu','percent_of_goal','goal_reached','minutes_in_sun','sessions','avg_uv','max_uv']];
+  rows.forEach(r=>out.push([r.date, r.label, Math.round(r.iu), goal, goal>0?Math.round(r.iu/goal*100):0,
+    (goal>0 && r.iu>=goal)?'yes':'no', r.min, r.sessions, r.avg_uvi, r.max_uvi]));
+  saveCsv('vitamin-d-last-'+rows.length+'-days.csv', out);
+}
+
+async function downloadChartPng(){
+  if(!lastDaily) return;
+  const d=lastDaily, rows=dayRows(d), n=rows.length, st=dayStats(rows, d.goal);
+  const CW=1200, PAD=40, chartW=CW-2*PAD, chartH=Math.round(chartW*210/600);
+  const svgStr=`<svg xmlns="http://www.w3.org/2000/svg" width="${chartW}" height="${chartH}" viewBox="0 0 600 210" font-family="${FONT}">`+
+    `<rect width="600" height="210" fill="#ffffff"/>${dailyInner(d, rows, -1, true)}</svg>`;
+  const img=new Image();
+  await new Promise((ok,bad)=>{ img.onload=ok; img.onerror=bad; img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svgStr); });
+  const chartTop=PAD+112, tableTop=chartTop+chartH+26, rowH=30, H=tableTop+(n+1)*rowH+70;
+  const cv=document.createElement('canvas'), S=2;
+  cv.width=CW*S; cv.height=H*S;
+  const ctx=cv.getContext('2d'); ctx.scale(S,S);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,CW,H);
+  ctx.fillStyle=C.ink; ctx.textBaseline='alphabetic';
+  ctx.font='bold 28px '+FONT; ctx.fillText('Vitamin D from sun: last '+n+' days', PAD, PAD+28);
+  ctx.font='15px '+FONT; ctx.fillStyle=C.muted;
+  ctx.fillText('User: '+USER+'   |   Daily goal: '+d.goal+' IU   |   Period: '+longDate(rows[0].date)+' to '+longDate(rows[n-1].date), PAD, PAD+58);
+  ctx.fillText('Generated: '+new Date().toLocaleString(), PAD, PAD+80);
+  ctx.fillStyle=C.ink; ctx.font='bold 16px '+FONT;
+  ctx.fillText('Total '+Math.round(st.total)+' IU   |   Average '+Math.round(st.avg)+' IU/day   |   Goal reached on '+st.hit+' of '+n+' days   |   Time in sun '+fmtMin(st.mins), PAD, PAD+104);
+  ctx.drawImage(img, PAD, chartTop, chartW, chartH);
+  const cols=[40,300,440,580,720,840,950,1050], heads=['Date','Vitamin D (IU)','% of goal','Time in sun','Sessions','Avg UV','Max UV','Goal'];
+  ctx.fillStyle='#fff1dc'; ctx.fillRect(PAD-8, tableTop-20, CW-2*PAD+16, rowH);
+  ctx.fillStyle=C.ink; ctx.font='bold 14px '+FONT;
+  heads.forEach((h,i)=>ctx.fillText(h, cols[i], tableTop));
+  ctx.font='14px '+FONT;
+  rows.forEach((r,k)=>{
+    const yy=tableTop+(k+1)*rowH;
+    if(k%2===1){ ctx.fillStyle='#fffaf2'; ctx.fillRect(PAD-8, yy-20, CW-2*PAD+16, rowH); }
+    const hit=d.goal>0 && r.iu>=d.goal;
+    const cells=[longDate(r.date)+(r.today?' (today)':''), String(Math.round(r.iu)), (d.goal>0?Math.round(r.iu/d.goal*100):0)+'%', fmtMin(r.min), String(r.sessions), r.sessions?String(r.avg_uvi):'-', r.sessions?String(r.max_uvi):'-', hit?'reached':'not yet'];
+    cells.forEach((c,i)=>{ ctx.fillStyle = (i===7 && hit) ? C.ok : C.ink; ctx.fillText(c, cols[i], yy); });
+  });
+  ctx.fillStyle=C.muted; ctx.font='12px '+FONT;
+  ctx.fillText('Estimates only, not medical advice. Educational project: UV sensor + NHANES-trained model. Dashed line = goal, dotted blue line = average.', PAD, H-26);
+  cv.toBlob(b=>{ if(b) saveBlob(b, 'vitamin-d-last-'+n+'-days.png'); }, 'image/png');
+}
+
+/* ---------------- past sessions ---------------- */
+function setSessFilter(f){
+  sessFilter=f;
+  document.querySelectorAll('#sessChips .chip').forEach(b=>b.classList.toggle('on', b.dataset.f===f));
+  renderHist();
+}
+function toggleSessAll(){ sessAll=!sessAll; renderHist(); }
+function limitColor(p){ return p<50 ? C.ok : p<80 ? '#f59e0b' : C.bad; }
+
+function renderHist(){
+  const list = SESS.filter(r => sessFilter==='all' || (sessFilter==='auto' ? r.auto : !r.auto));
+  const shown = sessAll ? list : list.slice(0,8);
+  const secs = list.reduce((a,r)=>a+(r.end_ts-r.start_ts),0);
+  const iu = list.reduce((a,r)=>a+r.iu,0);
+  const best = list.reduce((b,r)=>r.iu>b?r.iu:b, 0);
+  $('sessStats').innerHTML = list.length ?
+    `<div class="tile"><div class="k">Sessions</div><div class="v">${list.length}</div></div>`+
+    `<div class="tile"><div class="k">Total sun time</div><div class="v">${fmtMin(secs/60)}</div></div>`+
+    `<div class="tile"><div class="k">Total vitamin D</div><div class="v">${Math.round(iu)} IU</div></div>`+
+    `<div class="tile"><div class="k">Best session</div><div class="v">${Math.round(best)} IU</div></div>` : '';
+  $('histBody').innerHTML = shown.map(r=>{
+    const s=new Date(r.start_ts*1000), e=new Date(r.end_ts*1000);
+    const day=s.toLocaleDateString([], {weekday:'short', day:'numeric', month:'short'});
+    const tm={hour:'2-digit', minute:'2-digit'};
+    const lim=Math.max(0, r.pct_med), gp=GOAL>0 ? Math.round(r.iu/GOAL*100) : null;
+    return `<tr>`+
+      `<td><div class="d1">${day}</div><div class="d2">${s.toLocaleTimeString([],tm)} - ${e.toLocaleTimeString([],tm)}</div></td>`+
+      `<td>${fmtMin((r.end_ts-r.start_ts)/60)}</td>`+
+      `<td><span class="dot" style="background:${category(r.avg_uvi)[1]}"></span>${r.avg_uvi.toFixed(1)} <span class="d2">/ max ${r.max_uvi.toFixed(1)}</span></td>`+
+      `<td><span class="mini"><i style="width:${Math.min(lim,100)}%;background:${limitColor(lim)}"></i></span>${Math.round(lim)}%</td>`+
+      `<td><b>${Math.round(r.iu)} IU</b><div class="d2">${gp===null?'':gp+'% of daily goal'}</div></td>`+
+      `<td><span class="mode ${r.auto?'auto':'man'}">${r.auto?'Auto':'Manual'}</span></td></tr>`;
+  }).join('');
+  $('hist').style.display = shown.length ? '' : 'none';
+  const ne=$('noHist');
+  ne.style.display = shown.length ? 'none' : 'block';
+  ne.textContent = SESS.length ? 'No '+sessFilter+' sessions yet.' : 'No sessions yet. Start a session, or switch on Auto mode when the UV index is 3 or above.';
+  const mb=$('moreBtn');
+  mb.style.display = list.length>8 ? '' : 'none';
+  mb.textContent = sessAll ? 'Show fewer' : 'Show all '+list.length+' sessions';
+}
+async function loadHist(){
+  try{ SESS = await (await fetch('/api/sessions')).json(); renderHist(); }catch(e){}
+}
+function downloadSessionsCsv(){
+  const out=[['start','end','duration_min','avg_uv','max_uv','percent_of_burn_limit','vitamin_d_iu','percent_of_daily_goal','mode']];
+  SESS.forEach(r=>out.push([new Date(r.start_ts*1000).toLocaleString(), new Date(r.end_ts*1000).toLocaleString(),
+    ((r.end_ts-r.start_ts)/60).toFixed(1), r.avg_uvi.toFixed(1), r.max_uvi.toFixed(1), r.pct_med, Math.round(r.iu),
+    GOAL>0?Math.round(r.iu/GOAL*100):'', r.auto?'auto':'manual']));
+  saveCsv('vitamin-d-sessions.csv', out);
+}
+
+/* ---------------- model accuracy tabs ---------------- */
+function showModel(k){
+  document.querySelectorAll('.mpanel').forEach(e=>e.style.display = e.dataset.k===k ? 'block' : 'none');
+  document.querySelectorAll('.mtab').forEach(b=>b.classList.toggle('on', b.dataset.k===k));
+}
+
+/* ---------------- data loaders ---------------- */
+async function refreshUv(){
+  try{
+    const res = await fetch('/api/latest');
+    if(res.status===401){ location.href='/login'; return; }
+    const r = await res.json();
+    if(r.empty){ return; }
+    uvAge = r.age_s;
+    if(r.age_s>20){                      // old reading: do not show it as live
+      $('uv').textContent = '--'; $('uv').style.color = C.muted;
+      $('cat').textContent = 'SENSOR OFFLINE'; $('cat').style.color = C.muted;
+      $('meta').textContent = 'last reading '+fmtAgo(r.age_s)+' ago (UV '+r.uvi.toFixed(1)+', '+Math.round(r.mv)+' mV)';
+      $('satNote').style.display = 'none';
+      return;
+    }
+    const [name,color] = category(r.uvi);
+    $('uv').textContent = r.saturated ? Math.round(r.uvi)+'+' : r.uvi.toFixed(1);
+    $('uv').style.color = color;
+    $('cat').textContent = name; $('cat').style.color = color;
+    $('meta').textContent = Math.round(r.mv)+' mV | updated '+Math.round(r.age_s)+' s ago';
+    $('satNote').style.display = r.saturated ? 'block' : 'none';
+  }catch(e){}
+}
+
+async function loadChart(){
+  try{ drawUv(await (await fetch('/api/history?n=120')).json()); }catch(e){}
+}
+
+async function loadDaily(){
+  try{ lastDaily = await (await fetch('/api/daily?days='+RANGE)).json(); drawDaily(); }catch(e){}
+}
+
+async function status(){
+  try{
+    const res = await fetch('/api/session/status');
+    if(res.status===401){ location.href='/login'; return; }
+    const s = await res.json();
+    if(s.error){ return; }
+    active = s.active;
+    lastTodayIu = s.today.iu;
+    lastTodayMin = s.today.sun_s/60;
+    if(GOAL!==s.goal_iu){ GOAL=s.goal_iu; renderHist(); }
+
+    // badge + button
+    const b = $('badge');
+    if(!active){ b.textContent='IDLE'; b.className='badge b-idle'; }
+    else if(s.auto_session){ b.textContent='AUTO RUNNING'; b.className='badge b-auto'; }
+    else { b.textContent='MANUAL RUNNING'; b.className='badge b-man'; }
+    $('btn').textContent = active ? 'Stop session' : 'Start sun session';
+    $('btn').className = active ? 'btn-stop' : '';
+    if(document.activeElement!==$('autoSw')) $('autoSw').checked = s.auto_mode;
+
+    // numbers
+    $('s_time').textContent = active ? mmss(s.elapsed_s) : '--';
+    $('s_iu').textContent = active ? s.session.iu+' IU' : '--';
+    $('t_sun').textContent = fmtMin(s.today.sun_s/60);
+    $('t_rate').textContent = s.vitd_ok ? '~'+s.iu_per_min+' IU/min' : 'UV below 3';
+    $('needMin').textContent = s.remaining_iu<=0 ? 'Goal done' : fmtMin(s.need_min);
+    $('totMin').textContent = fmtMin(s.total_min);
+    if($('predMin')) $('predMin').textContent = s.vitd_ok ? fmtMin(s.total_min) : 'Wait for UV 3 or more';
+    $('left').textContent = s.minutes_left===null ? 'UV too low' : fmtMin(s.minutes_left);
+    $('remIu').textContent = s.remaining_iu+' IU';
+
+    // ring
+    const pct = s.goal_iu>0 ? Math.min(s.today.iu/s.goal_iu, 1) : 1;
+    $('ring').style.strokeDashoffset = 339.3*(1-pct);
+    $('ring').style.stroke = pct>=1 ? C.ok : C.accent;
+    $('ringVal').textContent = s.today.iu;
+    $('ringSub').textContent = 'of '+s.goal_iu+' IU';
+
+    // burn bar
+    $('bar').style.width = Math.min(s.today.pct_med,100)+'%';
+    $('bar').style.background = s.today.pct_med<50 ? C.ok : s.today.pct_med<80 ? '#f59e0b' : C.bad;
+    $('barText').textContent = s.today.pct_med+'% of your burn limit used today';
+    $('warn').style.display = s.warn ? 'block' : 'none';
+    $('err').textContent = (s.age_s===null || s.age_s>20) ? 'Sensor offline: dose is not being counted.' : '';
+
+    // advice sentence
+    let a;
+    if(s.age_s===null || s.age_s>20) a='The sensor is offline, so there is no live UV. Switch the ESP32 on to get advice for right now.';
+    else if(s.remaining_iu<=0) a='Daily goal reached. You can go indoors now.';
+    else if(!s.vitd_ok) a='UV is below 3 right now, so there is almost no vitamin D from sun. Try again when UV is higher.';
+    else if(s.minutes_left!==null && s.need_min>s.minutes_left) a='At this UV the burn limit comes first (in '+fmtMin(s.minutes_left)+'). You cannot safely reach the goal today from the sun alone.';
+    else a='Stay about '+fmtMin(s.need_min)+' more in this sun to reach today\'s goal.';
+    $('advice').textContent = a;
+    drawDaily();
+  }catch(e){}
+}
+
+/* ---------------- actions ---------------- */
+async function toggle(){
+  await fetch(active ? '/api/session/stop' : '/api/session/start', {method:'POST'});
+  await status(); await loadHist(); await loadDaily();
+}
+async function setAuto(on){
+  await fetch('/api/auto', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({on: on})});
+  await status();
+}
+
+refreshUv(); status(); loadChart(); loadDaily(); loadHist();
+setInterval(refreshUv, 2000);
+setInterval(status, 2000);
+setInterval(loadChart, 5000);
+setInterval(loadDaily, 30000);
+setInterval(loadHist, 15000);
+</script>
+{% endif %}
+{% endblock %}

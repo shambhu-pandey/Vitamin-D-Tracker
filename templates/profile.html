@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Your profile - Vitamin D Tracker{% endblock %}
+{% block content %}
+{# value helper: what the user just typed (after an error) wins, else the saved profile #}
+{% macro val(name, default='') -%}{% set f = form.get(name) %}{{ f if f is not none else (p[name] if (p and p[name] is not none) else default) }}{%- endmacro %}
+<style>
+  main{max-width:720px}
+  .hero{padding:6px 4px 4px}
+  .hero h2{margin:0 0 6px;font-size:26px}
+  .sec{padding:22px}
+  .sec-h{display:flex;gap:14px;align-items:flex-start;margin-bottom:6px}
+  .no{flex:none;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      font-weight:800;color:#fff;background:linear-gradient(135deg,#f97316,#fbbf24);box-shadow:0 4px 10px rgba(249,115,22,.35)}
+  .sec-h h3{margin:0;font-size:18px}
+  .hint{margin:3px 0 0;font-size:13px;color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 16px}
+  @media(max-width:620px){.grid2,.grid3{grid-template-columns:1fr}}
+  .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .opt{position:relative;margin:0;font-weight:500}
+  .opt input{position:absolute;opacity:0;width:1px;height:1px}
+  .opt span{display:block;padding:9px 15px;border:1.5px solid var(--line);border-radius:12px;background:#fffdfa;
+            cursor:pointer;font-size:14px;color:#5b3a1c;transition:all .12s}
+  .opt span:hover{border-color:#fdba74;background:#fff7ed}
+  .opt input:checked + span{color:#fff;font-weight:700;border-color:#f97316;
+            background:linear-gradient(135deg,#f97316,#fb923c);box-shadow:0 4px 12px rgba(249,115,22,.3)}
+  .opt input:focus-visible + span{box-shadow:0 0 0 3px rgba(249,115,22,.3)}
+  .q{margin-top:18px}
+  .q .qt{font-weight:700;font-size:15px;color:var(--ink)}
+  .unit{position:relative}
+  .unit input{padding-right:48px}
+  .unit i{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted);font-size:13px}
+  .sub{margin-top:20px;display:flex;justify-content:flex-end}
+  .sub button{margin:0;padding:13px 34px;font-size:16px}
+</style>
+
+<div class="hero">
+  <h2>Tell us about you</h2>
+  <p class="muted">Your answers stay with your account. They personalise your goal, your burn limit and your sun time.
+  Takes about two minutes.</p>
+</div>
+
+<form method="post">
+  <div class="card sec">
+    <div class="sec-h"><span class="no">1</span><div><h3>About you</h3>
+      <p class="hint">Used by the trained model to estimate your vitamin D level.</p></div></div>
+    <div class="grid3">
+      <div><label>Year of birth</label>
+        <input name="birth_year" type="number" min="1900" max="2100" placeholder="e.g. 2002" value="{{ val('birth_year') }}" required></div>
+      <div><label>Height</label>
+        <div class="unit"><input name="height_cm" type="number" step="0.1" placeholder="165" value="{{ val('height_cm') }}" required><i>cm</i></div></div>
+      <div><label>Weight</label>
+        <div class="unit"><input name="weight_kg" type="number" step="0.1" placeholder="60" value="{{ val('weight_kg') }}" required><i>kg</i></div></div>
+    </div>
+    <label>Sex</label>
+    <div class="opts">
+      {% for k, t in [('female','Female'),('male','Male'),('other','Other / prefer not to say')] %}
+      <label class="opt"><input type="radio" name="sex" value="{{ k }}" {{ 'checked' if val('sex') == k }} required><span>{{ t }}</span></label>
+      {% endfor %}
+    </div>
+    <label>Do you take vitamin D supplements?</label>
+    <div class="opts">
+      {% for k, t in [('yes','Yes'),('no','No')] %}
+      <label class="opt"><input type="radio" name="supplement" value="{{ k }}" {{ 'checked' if val('supplement') == k }} required><span>{{ t }}</span></label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card sec">
+    <div class="sec-h"><span class="no">2</span><div><h3>Your skin</h3>
+      <p class="hint">Five quick questions. They set your skin type, which decides how fast you burn and how fast you make vitamin D.</p></div></div>
+    {% for q, options in quiz %}
+    {% set i = loop.index0 %}
+    <div class="q">
+      <div class="qt">{{ loop.index }}. {{ q }}</div>
+      <div class="opts">
+        {% for opt in options %}
+        <label class="opt"><input type="radio" name="q{{ i }}" value="{{ loop.index0 }}"
+          {{ 'checked' if (form.get('q%d' % i) == loop.index0|string) or (not form and p and p.answers[i] == loop.index0) }} required><span>{{ opt }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card sec">
+    <div class="sec-h"><span class="no">3</span><div><h3>Your usual sun habits</h3>
+      <p class="hint">How much of your skin the sun can reach, and whether you protect it.</p></div></div>
+    <label>How much skin is usually uncovered outdoors?</label>
+    <div class="opts">
+      {% for k, (t, f) in exposed.items() %}
+      <label class="opt"><input type="radio" name="exposed" value="{{ k }}" {{ 'checked' if val('exposed') == k }} required><span>{{ t }}</span></label>
+      {% endfor %}
+    </div>
+    <label>Do you use sunscreen outdoors?</label>
+    <div class="opts">
+      {% for k, t in [('always','Always'),('sometimes','Sometimes'),('never','Never')] %}
+      <label class="opt"><input type="radio" name="sunscreen" value="{{ k }}" {{ 'checked' if val('sunscreen') == k }} required><span>{{ t }}</span></label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card sec">
+    <div class="sec-h"><span class="no">4</span><div><h3>Time outdoors</h3>
+      <p class="hint">Outside and <b>not under any shade</b>, between 9 am and 5 pm, on an average day in the last month.
+      Enter 0 if none (maximum 480 = 8 hours).</p></div></div>
+    <div class="grid2">
+      <div><label>On days you work or go to school</label>
+        <div class="unit"><input name="outdoor_wd" type="number" min="0" max="480" step="1" placeholder="30" value="{{ val('outdoor_wd') }}" required><i>min</i></div></div>
+      <div><label>On days you do not work or go to school</label>
+        <div class="unit"><input name="outdoor_we" type="number" min="0" max="480" step="1" placeholder="60" value="{{ val('outdoor_we') }}" required><i>min</i></div></div>
+    </div>
+  </div>
+
+  <div class="sub"><button type="submit">Save profile</button></div>
+</form>
+{% endblock %}

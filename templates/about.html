@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}How the numbers are made - Vitamin D Tracker{% endblock %}
+{% block content %}
+<style>main{max-width:820px} table.h{width:100%;font-size:14px;border-collapse:collapse}
+table.h td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+table.h tr:first-child td{color:var(--muted);font-size:12px;font-weight:700}</style>
+<div class="card">
+  <h2 style="margin-top:0">How these numbers are made</h2>
+  <p>This app uses <b>two kinds of models</b>. For the things a public survey dataset actually measured, we use a
+  statistical model trained on that dataset. For the things the dataset does not contain, we built our own
+  research-based model from published sun-exposure rules. We keep the two separate on purpose, and we show which is which.</p>
+  <p class="muted">It is an educational project. It is not a medical device, not a blood test and not a diagnosis.</p>
+</div>
+
+<div class="card">
+  <table class="h">
+    <tr><td>Number</td><td>Where it comes from</td><td>Type</td></tr>
+    <tr><td>Live UV index</td><td>GUVA-S12SD sensor on an ESP32. Accuracy depends on calibration against a reference.</td><td>Measured</td></tr>
+    <tr><td>Predicted blood level (nmol/L)</td><td>Regression trained on US NHANES 2013-2014 (basic model: adults 18-80, 5,596 people;
+      sun-habits model: ages 20-59, 3,541 people). Typical error about 17-18 nmol/L. Not trained on Indian people.</td><td>Data-driven</td></tr>
+    <tr><td>Target 75 nmol/L and "gap to IU"</td><td>About 2 nmol/L rise per 100 IU a day, from published supplementation trials.
+      That figure is for oral vitamin D, not sunlight.</td><td>Research-based</td></tr>
+    <tr><td>Daily goal</td><td>The larger of the model's gap and the standard intake (600 IU, 800 IU above age 70),
+      because the model error is large.</td><td>Mixed</td></tr>
+    <tr><td>Vitamin D per minute, minutes for the goal</td><td>Holick's rule (about 1/4 of a burn dose over 1/4 of the body is
+      comparable to 1,000 IU by mouth) and the commonly quoted figure of about 10,000 IU for one burn dose over the whole body,
+      scaled by your skin type, uncovered skin, sunscreen and age. We use the lower, more cautious figure.</td><td>Research-based</td></tr>
+    <tr><td>Burn limit</td><td>Typical burn doses by skin type (approximate). Skin type comes from a simplified, Fitzpatrick-style
+      5-question quiz that has not been clinically validated.</td><td>Research-based, approximate</td></tr>
+    <tr><td>Uncovered skin (10 / 25 / 40 %), sunscreen strength, age factor</td><td>Our own simple assumptions</td><td>Assumption</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">What it does not know</h3>
+  <p class="muted">Diet, genetics, season and weather, clothing in detail, how much shade you really stand in, and the real
+  response of your own body. Sun time shown is a best case. The survey only tells us patterns across many people.
+  Please check your real level with a blood test and follow your doctor's advice.</p>
+  <p class="muted">You can help check the model: add a result on the
+  <a href="{{ url_for('labs') }}">blood test page</a>.</p>
+</div>
+{% endblock %}
