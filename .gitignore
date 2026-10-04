@@ -1,0 +1,21 @@
+# Python caches and environments
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# Local secrets and runtime state
+secret.key
+tracker.db
+
+# Generated model and analysis artifacts
+*.joblib
+model_report.json
+charts/
+
+# Downloaded research datasets
+data/
+
+# Local environment files
+.env
+.env.*
