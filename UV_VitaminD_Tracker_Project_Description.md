@@ -18,7 +18,6 @@ The system has three parts:
 
 The dashboard then tells each user: how much UV there is now, how much vitamin D they have made today, how many more minutes they need in the sun, and how many minutes are left before the burn limit.
 
-> **Important:** this is an educational project. It gives estimates only. It is not a medical device and not a blood test.
 
 ---
 

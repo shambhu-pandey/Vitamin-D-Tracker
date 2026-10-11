@@ -1,5 +1,3 @@
-
-
 {% extends "base.html" %}
 {% block title %}Dashboard - Vitamin D Tracker{% endblock %}
 {% block content %}
@@ -227,6 +225,8 @@
       {% else %}
       Model used: basic model with age, sex, BMI and supplement only. Trained on NHANES 2013-2014 adults aged 18-80.
       {% endif %}
+      {% if pred.extra_inputs %} Extra inputs used by the model: {{ pred.extra_inputs|join(', ') }}.{% endif %}
+      {% if pred.corrections %} Small corrections measured from NHANES data (nmol/L): {{ pred.corrections|join(', ') }}.{% endif %}
     </p>
 
     {% for n in pred.notes %}<div class="note">{{ n }}</div>{% endfor %}
@@ -342,257 +342,6 @@
       (80% is the warning level). "% of daily goal" compares the session's vitamin D with your daily goal.</p>
   </div>
 
-  <!-- VITAMIN D GUIDE -->
-  <div class="card anchor" id="guide">
-    <h3 style="margin-top:0">Vitamin D guide</h3>
-    <p class="muted" style="margin:0">Short and simple answers: what it does, how to get it, what low levels mean, and what to eat.</p>
-
-    <details class="acc" open>
-      <summary>What is vitamin D and why do we need it?</summary>
-      <div class="in">
-        <p>Vitamin D helps your gut absorb <b>calcium and phosphorus</b>, so bones and teeth stay strong. It also supports
-          <b>muscle function</b> and the <b>immune system</b>. Your body makes it when UVB rays from the sun hit bare skin.
-          Some foods and supplements also give it.</p>
-        <p>The blood test that shows your vitamin D status is called <b>25-hydroxy vitamin D, or 25(OH)D</b>
-          (written in nmol/L or ng/mL; 1 ng/mL = 2.5 nmol/L).</p>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>How do we get vitamin D?</summary>
-      <div class="in">
-        <div class="tri">
-          <div class="box"><b>&#9728;&#65039; Sun</b>For most people the main source. UVB turns a compound in your skin into vitamin D3.
-            Needs UV index about 3 or more. Window glass blocks UVB, so sitting in sun behind glass does not count.</div>
-          <div class="box"><b>&#127869;&#65039; Food</b>Few foods have much: fatty fish, egg yolk, liver, UV-exposed mushrooms and
-            fortified foods (some milk, oils and cereals).</div>
-          <div class="box"><b>&#128138; Supplements</b>Vitamin D3 (or D2) tablets, drops or sachets. Best taken after a blood test
-            and a doctor's advice.</div>
-        </div>
-        <p><b>Things that reduce what your skin makes:</b> sunscreen, covering clothes, darker skin, older age, staying indoors,
-          and low UV (early morning, evening, cloudy or polluted air). Studies report that low vitamin D is common in India
-          even though it is sunny, mainly because of indoor lifestyles, clothing and diet.</p>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>What do the blood levels mean?</summary>
-      <div class="in">
-        <table class="g">
-          <tr><th>25(OH)D level</th><th>Usually called</th></tr>
-          <tr><td>below 30 nmol/L (12 ng/mL)</td><td class="red">Deficient</td></tr>
-          <tr><td>30 to 49 nmol/L</td><td>Inadequate for some people</td></tr>
-          <tr><td>50 to 74 nmol/L</td><td>Enough for most people (many guidelines)</td></tr>
-          <tr><td>75 nmol/L (30 ng/mL) or more</td><td>The target this app uses (some guidelines prefer this level)</td></tr>
-          <tr><td>above 125 nmol/L (50 ng/mL)</td><td>May be harmful, mostly from too many supplements</td></tr>
-        </table>
-        <p class="muted" style="font-size:12.5px">Medical groups do not fully agree on the cut-offs, so ask your doctor how to read your own result.</p>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>What happens if vitamin D is low?</summary>
-      <div class="in">
-        <ul>
-          <li><b>Children:</b> rickets, which means soft, weak bones, bowed legs and slow growth.</li>
-          <li><b>Adults:</b> osteomalacia: bone pain, tenderness and muscle weakness. Low vitamin D also makes osteoporosis worse.</li>
-          <li><b>Older adults:</b> higher risk of falls and broken bones.</li>
-          <li>Over a long time, less calcium is absorbed, so the body takes calcium from the bones.</li>
-          <li>Tiredness and body aches are often mentioned, but they have many other causes. Many people with low levels feel
-            nothing, so <b>only a blood test confirms it</b>.</li>
-        </ul>
-        <p><b>Higher risk:</b> darker skin, little sun or covered clothing, always using sunscreen, older age, higher body weight,
-          pregnancy and breastfeeding, and conditions such as celiac, Crohn's, kidney or liver disease, or some medicines.</p>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>How can I fix it? (ways to fulfil your need)</summary>
-      <div class="in">
-        <ol style="margin:6px 0 6px 18px;padding:0">
-          <li><b>Sensible sun:</b> short sessions around midday when the UV index is 3 or more, with arms and legs uncovered if that suits
-            you. Stop well before your skin turns pink. This app's burn limit helps with that.</li>
-          <li><b>Food:</b> see the food table below. Food alone rarely reaches the daily need unless you eat fatty fish often.</li>
-          <li><b>Fortified foods:</b> some milk, edible oils and cereals have vitamin D added. Check the label.</li>
-          <li><b>Supplements:</b> the standard daily intake is 600 IU (15 mcg), and 800 IU after age 70. For a proven deficiency a doctor may
-            prescribe more for a limited time. Taking it with a meal that contains some fat may help absorption.</li>
-          <li><b>Re-check:</b> if you are treated for low levels, a doctor usually repeats the blood test after a few months.</li>
-        </ol>
-        {% if cap %}
-        <div class="note">Your daily goal is <b>{{ cap.goal }} IU</b>. With your usual clothing and sunscreen, sun can safely give about
-          <b>{{ cap.max_safe_iu }} IU</b> a day{% if cap.max_safe_iu < cap.goal %}, so the rest has to come from food, fortified foods or
-          a supplement (ask a doctor){% endif %}.</div>
-        {% endif %}
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>Diet: which foods have vitamin D?</summary>
-      <div class="in">
-        <div class="wrap-x"><table class="g">
-          <tr><th>Food</th><th>Serving</th><th>About (IU)</th><th>Type</th></tr>
-          <tr><td>Cod liver oil</td><td>1 tablespoon</td><td>1,300+</td><td>Fish</td></tr>
-          <tr><td>Trout (cooked)</td><td>85 g</td><td>about 650</td><td>Fish</td></tr>
-          <tr><td>Salmon (cooked)</td><td>85 g</td><td>about 570</td><td>Fish</td></tr>
-          <tr><td>UV-exposed mushrooms</td><td>&frac12; cup</td><td>about 350 (varies a lot)</td><td>Vegan</td></tr>
-          <tr><td>Fortified milk</td><td>1 cup (240 ml)</td><td>about 100 to 120</td><td>Dairy</td></tr>
-          <tr><td>Fortified cereal</td><td>1 serving</td><td>about 80 (check label)</td><td>Veg</td></tr>
-          <tr><td>Sardines (canned)</td><td>2 fish</td><td>about 45</td><td>Fish</td></tr>
-          <tr><td>Egg</td><td>1 large (the yolk has it)</td><td>about 40</td><td>Egg</td></tr>
-          <tr><td>Beef liver (cooked)</td><td>85 g</td><td>about 40</td><td>Meat</td></tr>
-        </table></div>
-        <ul>
-          <li>Numbers are rough values from US food tables. Indian products and fortification differ, so read labels.</li>
-          <li>A vegetarian diet usually gives little vitamin D. Sun, fortified foods or a supplement matter more.</li>
-          <li>Calcium-rich foods (milk, curd, ragi, leafy greens) work together with vitamin D for bones.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>Can I take too much?</summary>
-      <div class="in">
-        <p>Yes, from <b>supplements</b> (not from sun). The usual upper limit for adults is about <b>4,000 IU (100 mcg) a day</b>
-          unless a doctor prescribes more. Too much can raise blood calcium and cause nausea, vomiting, weakness, frequent urination and
-          kidney problems. Do not take large doses on your own.</p>
-        <p>Sun cannot cause this, because the skin stops making extra vitamin D, but too much sun still causes sunburn and raises skin
-          cancer risk.</p>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>Limitations of this app</summary>
-      <div class="in">
-        <ul>
-          <li>It gives <b>estimates only</b>. It is not a medical device, not a blood test and not a diagnosis.</li>
-          <li>The level prediction has a typical error of about 17 to 19 nmol/L, and uses only a few inputs. It does not know your food,
-            genes, medicines, health conditions or season.</li>
-          <li>The model learned from <b>US adults (NHANES 2013-2014)</b>, not from Indian people, so it may be less accurate for you.</li>
-          <li>Time outdoors and skin reaction are what you tell the app (self-reported).</li>
-          <li>The UV sensor is hobby grade. It reads at most about UV 7 before it saturates, and the sun maths uses approximate constants.</li>
-          <li>Your daily goal is never below the standard intake (600 IU, 800 IU above age 70), because the model error is large.</li>
-          <li>The prediction is shown only for ages 18 to 80, and the sun model only for ages 20 to 59.</li>
-        </ul>
-      </div>
-    </details>
-
-    <details class="acc">
-      <summary>When should I see a doctor?</summary>
-      <div class="in">
-        <ul>
-          <li>Bone pain, muscle weakness or frequent fractures or falls.</li>
-          <li>You are pregnant, breastfeeding, elderly, or have kidney, liver or gut disease, or take long-term medicines.</li>
-          <li>The "Higher risk" flag appears for you, or you want to start vitamin D tablets (ask for a 25(OH)D blood test first).</li>
-          <li>For babies and children, always ask the doctor about the dose.</li>
-        </ul>
-      </div>
-    </details>
-    <p class="src">General facts follow public health guidance such as the US NIH Office of Dietary Supplements and the Endocrine Society.
-      This is education, not medical advice.</p>
-  </div>
-
-  <!-- MODEL ACCURACY -->
-  <div class="card anchor" id="accuracy">
-    <h3 style="margin-top:0">How accurate is our model?</h3>
-    <p class="muted" style="margin:0">All numbers come from 5-fold cross-validation on NHANES 2013-2014 (US adults): every person is predicted by a model
-      that never saw them. They are <b>not</b> tested on Indian people.</p>
-
-    {% if pred %}<p style="font-size:14px;margin:10px 0 0">Your profile is scored by the
-      <b>{{ 'sun-habits' if pred.model_used == 'sun' else 'basic' }} model</b>.</p>{% endif %}
-
-    <div class="chips" style="margin-top:10px">
-      {% for k, m in report.models.items() %}
-      <button type="button" class="chip mtab {{ 'on' if k == default_model }}" data-k="{{ k }}" onclick="showModel('{{ k }}')">{{ m.title }}</button>
-      {% endfor %}
-    </div>
-
-    {% set labels = ['LOW (below 50)', 'MIDDLE (50 to 75)', 'HIGHER (75+)'] %}
-    {% for k, m in report.models.items() %}
-    <div class="mpanel" data-k="{{ k }}" style="display:{{ 'block' if k == default_model else 'none' }}">
-      <p class="muted" style="font-size:13px;margin:10px 0 0">{{ m.title }}: {{ m.inputs }}. Tested on {{ '{:,}'.format(m.people) }} people.</p>
-
-      <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-        <div class="tile"><div class="k">Typical error (MAE)</div><div class="v">{{ m.mae }} nmol/L</div></div>
-        <div class="tile"><div class="k">R&sup2; (variation explained)</div><div class="v">{{ '%.2f'|format(m.r2) }}</div></div>
-        <div class="tile"><div class="k">Within &plusmn;10 nmol/L</div><div class="v">{{ m.w10 }}%</div></div>
-        <div class="tile"><div class="k">Within &plusmn;20 nmol/L</div><div class="v">{{ m.w20 }}%</div></div>
-      </div>
-
-      <h4 style="margin:18px 0 4px">Yes / no questions</h4>
-      <div class="muted" style="font-size:13px">For each question the model says "yes, below this level" or "no". The bars show the score.</div>
-      <div class="wrap-x"><table class="g" style="min-width:560px">
-        <tr><th>Question</th><th>People who truly are below</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>Specificity</th><th>F1</th><th>ROC AUC</th></tr>
-        {% for c in m.cuts %}
-        <tr><td><b>{{ c.q }}</b></td><td>{{ c.prev }}%</td>
-          <td class="m" style="--v:{{ c.acc }}%">{{ '%.1f'|format(c.acc) }}%</td>
-          <td class="m" style="--v:{{ c.prec }}%">{{ '%.1f'|format(c.prec) }}%</td>
-          <td class="m" style="--v:{{ c.rec }}%">{{ '%.1f'|format(c.rec) }}%</td>
-          <td class="m" style="--v:{{ c.spec }}%">{{ '%.1f'|format(c.spec) }}%</td>
-          <td class="m" style="--v:{{ c.f1 }}%">{{ '%.1f'|format(c.f1) }}%</td>
-          <td>{{ '%.2f'|format(c.auc) }}</td></tr>
-        {% endfor %}
-      </table></div>
-      <p class="muted" style="font-size:12.5px">Look at the first row: accuracy is high ({{ '%.0f'|format(m.cuts[0].acc) }}%) only because most people are not deficient.
-        The model finds <b>none</b> of the deficient people (recall 0%), so accuracy alone can fool you.</p>
-
-      <h4 style="margin:18px 0 4px">The "Higher risk" flag</h4>
-      <p style="font-size:14px;margin:0">Flag when predicted level is below <b>{{ m.flag.cut }} nmol/L</b>:
-        it catches <b>{{ m.flag.rec }}%</b> of people really below 50 nmol/L (recall), and
-        <b>{{ m.flag.prec }}%</b> of the flagged people truly are below 50 (precision). So about half of the flags are false alarms,
-        which is acceptable for a screening hint that only says "consider a blood test".</p>
-
-      <h4 style="margin:18px 0 4px">The 3 level groups shown on the dashboard</h4>
-      <p class="muted" style="font-size:13px;margin:0">Overall accuracy {{ m.acc3 }}% (always guessing the commonest group gives {{ m.base3 }}%).
-        Balanced accuracy {{ m.bal3 }}%, macro F1 {{ m.f13 }}%.</p>
-      <div class="wrap-x"><table class="g" style="min-width:420px">
-        <tr><th>Group</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
-        {% for gr in m.groups %}
-        <tr><td><b>{{ gr.name }}</b></td>
-          <td class="m" style="--v:{{ gr.prec }}%">{{ '%.1f'|format(gr.prec) }}%</td>
-          <td class="m" style="--v:{{ gr.rec }}%">{{ '%.1f'|format(gr.rec) }}%</td>
-          <td class="m" style="--v:{{ gr.f1 }}%">{{ '%.1f'|format(gr.f1) }}%</td></tr>
-        {% endfor %}
-      </table></div>
-
-      <div class="muted" style="font-size:13px;margin-top:10px">Confusion matrix: each row is what the blood test really showed, each column is what the model said
-        (percent of that row, with the number of people below).</div>
-      <div class="wrap-x"><table class="cm" style="width:100%;min-width:420px;border-collapse:collapse;margin-top:6px">
-        <tr><th class="r"></th><th>Model: LOW</th><th>Model: MIDDLE</th><th>Model: HIGHER</th></tr>
-        {% for row in m.cm %}{% set rs = row|sum %}
-        <tr><th class="r">Really {{ labels[loop.index0] }}</th>
-          {% for cell in row %}<td style="background:rgba(249,115,22,{{ '%.2f'|format(0.06 + 0.6 * cell / rs) }})">{{ (cell / rs * 100)|round|int }}%<small>{{ cell }} people</small></td>{% endfor %}
-        </tr>
-        {% endfor %}
-      </table></div>
-    </div>
-    {% endfor %}
-
-    <div class="note" style="background:#ecfdf5;color:#065f46">
-      <b>In plain words:</b>
-      <ul style="margin:6px 0 0 18px;padding:0">
-        <li>The model is <b>fair at ranking risk</b> (ROC AUC about 0.72 to 0.76), but it cannot tell your exact level: the typical error is about 17 to 19 nmol/L.</li>
-        <li>It is <b>not a deficiency detector</b>: it never predicts levels below 30 nmol/L.</li>
-        <li>Its "LOW" label is right most of the time it appears (precision 56 to 64%), but it misses most low people (recall 10 to 26%). The "Higher risk" flag is more sensitive (about 80%) at the price of false alarms.</li>
-        <li>It learned from US data. Use it as a hint, and get a blood test to know your real level.</li>
-      </ul>
-    </div>
-
-    <details class="acc">
-      <summary>What do these words mean?</summary>
-      <div class="in"><dl class="gl">
-        <dt>MAE (typical error)</dt><dd>The average gap between the predicted and the real blood level, in nmol/L. Smaller is better.</dd>
-        <dt>R&sup2;</dt><dd>How much of the differences between people the model explains. 0 = nothing, 1 = everything. Ours is about 0.19 to 0.25, which is low.</dd>
-        <dt>Accuracy</dt><dd>Share of all people the model got right. Can look good when one group is much bigger than the other.</dd>
-        <dt>Precision</dt><dd>Of the people the model called "low", how many really were low.</dd>
-        <dt>Recall (sensitivity)</dt><dd>Of the people who really were low, how many the model found.</dd>
-        <dt>Specificity</dt><dd>Of the people who were not low, how many the model correctly left alone.</dd>
-        <dt>F1</dt><dd>One number that balances precision and recall.</dd>
-        <dt>ROC AUC</dt><dd>How well the model ranks people from lower to higher risk, whatever cut-off is used. 0.5 = guessing, 1.0 = perfect.</dd>
-        <dt>Cross-validation</dt><dd>The data is split into 5 parts; each part is predicted by a model trained on the other 4, so the results are honest.</dd>
-      </dl></div>
-    </details>
-  </div>
-
   <!-- PROFILE -->
   <div class="card">
     <h3 style="margin-top:0">Your profile</h3>
@@ -605,6 +354,8 @@
       <tr><td class="muted">Vitamin D supplement</td><td>{{ p.supplement }}</td></tr>
       <tr><td class="muted">Outdoors 9-5 (work / other days)</td>
           <td>{% if p.outdoor_wd is not none %}{{ p.outdoor_wd }} / {{ p.outdoor_we }} min{% else %}not answered yet{% endif %}</td></tr>
+      <tr><td class="muted">Health and lifestyle</td>
+          <td>{% if p.kidney is none %}not answered yet{% else %}{{ ['kidney disease' if p.kidney, 'liver condition' if p.liver, 'thyroid problem' if p.thyroid, 'diabetes' if p.diabetes, 'weak bones' if p.bone, 'smoker' if p.smoker]|select|join(', ') or 'no conditions reported' }}{% endif %}</td></tr>
     </table>
     <p><a href="{{ url_for('profile') }}">Edit profile</a> &middot;
        <a href="{{ url_for('labs') }}">Add a blood test result</a> &middot;

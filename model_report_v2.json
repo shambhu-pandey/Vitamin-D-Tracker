@@ -1,0 +1,246 @@
+{
+ "report": {
+  "models": {
+   "base": {
+    "title": "Basic model",
+    "people": 5596,
+    "inputs": "age, sex, BMI, supplement, kidney disease, liver condition, thyroid problem, diabetes, current smoker, milk intake, alcohol per week, heavy drinking (14+ drinks a week) (ages 18-80)",
+    "mae": 18.3,
+    "r2": 0.261,
+    "w10": 35,
+    "w20": 64,
+    "cuts": [
+     {
+      "q": "Below 30 nmol/L (deficient)",
+      "prev": 8.1,
+      "acc": 91.9,
+      "prec": 0.0,
+      "rec": 0.0,
+      "spec": 100.0,
+      "f1": 0.0,
+      "auc": 0.744
+     },
+     {
+      "q": "Below 50 nmol/L (low)",
+      "prev": 30.9,
+      "acc": 71.2,
+      "prec": 61.8,
+      "rec": 17.5,
+      "spec": 95.2,
+      "f1": 27.3,
+      "auc": 0.745
+     },
+     {
+      "q": "Below 75 nmol/L (under the target)",
+      "prev": 68.6,
+      "acc": 75.6,
+      "prec": 79.0,
+      "rec": 87.7,
+      "spec": 49.0,
+      "f1": 83.1,
+      "auc": 0.769
+     }
+    ],
+    "flag": {
+     "cut": 64,
+     "prec": 44.9,
+     "rec": 81.0
+    },
+    "groups": [
+     {
+      "name": "LOW (below 50)",
+      "prec": 61.8,
+      "rec": 17.5,
+      "f1": 27.3
+     },
+     {
+      "name": "MIDDLE (50 to 75)",
+      "prec": 41.9,
+      "rec": 75.0,
+      "f1": 53.7
+     },
+     {
+      "name": "HIGHER (75+)",
+      "prec": 64.7,
+      "rec": 49.0,
+      "f1": 55.8
+     }
+    ],
+    "cm": [
+     [
+      303,
+      1328,
+      99
+     ],
+     [
+      155,
+      1580,
+      372
+     ],
+     [
+      32,
+      865,
+      862
+     ]
+    ],
+    "acc3": 49.1,
+    "base3": 37.7,
+    "bal3": 47.2,
+    "f13": 45.6,
+    "context_only": [
+     "osteoporosis / weak bones"
+    ],
+    "project_model_features": [
+     "age",
+     "female",
+     "bmi",
+     "supplement",
+     "kidney",
+     "liver",
+     "thyroid",
+     "diabetes",
+     "smoker",
+     "milk",
+     "alcohol_week",
+     "heavy_drinker"
+    ],
+    "validation": {
+     "baseline_mae": 18.617,
+     "full_model_mae": 18.273,
+     "baseline_r2": 0.242,
+     "full_model_r2": 0.261,
+     "mae_change": -0.344,
+     "full_model_better_mae": true
+    }
+   },
+   "sun": {
+    "title": "Sun-habits model",
+    "people": 3581,
+    "inputs": "age, sex, BMI, supplement, time outdoors, skin reaction, kidney disease, liver condition, thyroid problem, diabetes, current smoker, milk intake, alcohol per week, heavy drinking (14+ drinks a week) (ages 20-59)",
+    "mae": 17.1,
+    "r2": 0.209,
+    "w10": 37,
+    "w20": 67,
+    "cuts": [
+     {
+      "q": "Below 30 nmol/L (deficient)",
+      "prev": 9.4,
+      "acc": 90.6,
+      "prec": 0.0,
+      "rec": 0.0,
+      "spec": 100.0,
+      "f1": 0.0,
+      "auc": 0.748
+     },
+     {
+      "q": "Below 50 nmol/L (low)",
+      "prev": 35.1,
+      "acc": 69.9,
+      "prec": 66.0,
+      "rec": 29.5,
+      "spec": 91.8,
+      "f1": 40.8,
+      "auc": 0.74
+     },
+     {
+      "q": "Below 75 nmol/L (under the target)",
+      "prev": 75.2,
+      "acc": 76.8,
+      "prec": 79.8,
+      "rec": 92.6,
+      "spec": 28.9,
+      "f1": 85.7,
+      "auc": 0.737
+     }
+    ],
+    "flag": {
+     "cut": 60,
+     "prec": 50.2,
+     "rec": 75.3
+    },
+    "groups": [
+     {
+      "name": "LOW (below 50)",
+      "prec": 66.0,
+      "rec": 29.5,
+      "f1": 40.8
+     },
+     {
+      "name": "MIDDLE (50 to 75)",
+      "prec": 43.7,
+      "rec": 78.0,
+      "f1": 56.0
+     },
+     {
+      "name": "HIGHER (75+)",
+      "prec": 56.2,
+      "rec": 28.9,
+      "f1": 38.2
+     }
+    ],
+    "cm": [
+     [
+      371,
+      850,
+      36
+     ],
+     [
+      152,
+      1120,
+      164
+     ],
+     [
+      39,
+      592,
+      257
+     ]
+    ],
+    "acc3": 48.8,
+    "base3": 40.1,
+    "bal3": 45.5,
+    "f13": 45.0,
+    "context_only": [
+     "osteoporosis / weak bones"
+    ],
+    "project_model_features": [
+     "age",
+     "female",
+     "bmi",
+     "supplement",
+     "outdoor_min",
+     "skin_react",
+     "kidney",
+     "liver",
+     "thyroid",
+     "diabetes",
+     "smoker",
+     "milk",
+     "alcohol_week",
+     "heavy_drinker"
+    ],
+    "validation": {
+     "baseline_mae": 17.431,
+     "full_model_mae": 17.143,
+     "baseline_r2": 0.192,
+     "full_model_r2": 0.209,
+     "mae_change": -0.287,
+     "full_model_better_mae": true
+    }
+   }
+  }
+ },
+ "flag_cut": {
+  "base": 64,
+  "sun": 60
+ },
+ "flag_stats": {
+  "base": [
+   45,
+   81
+  ],
+  "sun": [
+   50,
+   75
+  ]
+ }
+}

@@ -3,6 +3,18 @@
 {% block content %}
 {# value helper: what the user just typed (after an error) wins, else the saved profile #}
 {% macro val(name, default='') -%}{% set f = form.get(name) %}{{ f if f is not none else (p[name] if (p and p[name] is not none) else default) }}{%- endmacro %}
+{# yes / no question #}
+{% macro yn(name, label, hint='') -%}
+<div class="q">
+  <div class="qt">{{ label }}</div>
+  {% if hint %}<p class="hint" style="margin:2px 0 0">{{ hint }}</p>{% endif %}
+  <div class="opts">
+    {% for k, t in [('1','Yes'),('0','No')] %}
+    <label class="opt"><input type="radio" name="{{ name }}" value="{{ k }}" {{ 'checked' if val(name) == k }} required><span>{{ t }}</span></label>
+    {% endfor %}
+  </div>
+</div>
+{%- endmacro %}
 <style>
   main{max-width:720px}
   .hero{padding:6px 4px 4px}
@@ -32,12 +44,13 @@
   .unit i{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-style:normal;color:var(--muted);font-size:13px}
   .sub{margin-top:20px;display:flex;justify-content:flex-end}
   .sub button{margin:0;padding:13px 34px;font-size:16px}
+  .tag-new{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:99px;background:#dcfce7;color:#166534;font-size:11px;font-weight:800;vertical-align:middle}
 </style>
 
 <div class="hero">
   <h2>Tell us about you</h2>
   <p class="muted">Your answers stay with your account. They personalise your goal, your burn limit and your sun time.
-  Takes about two minutes.</p>
+  Takes about three minutes.</p>
 </div>
 
 <form method="post">
@@ -112,6 +125,49 @@
     </div>
   </div>
 
+  <div class="card sec">
+    <div class="sec-h"><span class="no">5</span><div><h3>Health and lifestyle <span class="tag-new">NEW</span></h3>
+      <p class="hint">The kidneys and liver turn vitamin D into its useful forms, and bones, hormones and daily habits change how much you have.
+      Answer from what a doctor has told you. This is not a medical record and is never shared.</p></div></div>
+    {{ yn('kidney', 'Has a doctor ever told you that you have weak or failing kidneys (kidney disease)?') }}
+    {{ yn('liver', 'Has a doctor ever told you that you have any liver condition?', 'For example fatty liver, hepatitis or cirrhosis.') }}
+    {{ yn('thyroid', 'Has a doctor ever told you that you have a thyroid problem?', 'For example an under-active or over-active thyroid, or goitre.') }}
+    {{ yn('diabetes', 'Has a doctor ever told you that you have diabetes?') }}
+    {{ yn('bone', 'Has a doctor ever told you that you have weak bones (osteoporosis or osteomalacia)?') }}
+    {{ yn('smoker', 'Do you smoke cigarettes or bidis now?') }}
+    <div class="q">
+      <div class="qt">How many alcoholic drinks do you have in a typical week?</div>
+      <p class="hint" style="margin:2px 0 0">One drink = a small beer, a glass of wine or a small peg of spirits.</p>
+      <div class="opts">
+        {% for k, t in [('0','None'),('1','1 to 7'),('2','8 to 14'),('3','15 or more')] %}
+        <label class="opt"><input type="radio" name="alcohol" value="{{ k }}" {{ 'checked' if val('alcohol') == k }} required><span>{{ t }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="q">
+      <div class="qt">How often do you drink milk (including tea or coffee made mostly with milk)?</div>
+      <div class="opts">
+        {% for k, t in [('0','Never'),('1','Rarely (less than once a week)'),('2','Sometimes (once a week or more)'),('3','Every day')] %}
+        <label class="opt"><input type="radio" name="milk" value="{{ k }}" {{ 'checked' if val('milk') == k }} required><span>{{ t }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <div id="menoBox" style="display:none">
+    </div>
+  </div>
+
   <div class="sub"><button type="submit">Save profile</button></div>
 </form>
+
+<script>
+function syncMeno(){
+  const f = document.querySelector('input[name=sex]:checked');
+  const show = !!f && f.value === 'female';
+  const box = document.getElementById('menoBox');
+  box.style.display = show ? 'block' : 'none';
+  box.querySelectorAll('input').forEach(i => { i.required = show; });
+}
+document.querySelectorAll('input[name=sex]').forEach(i => i.addEventListener('change', syncMeno));
+syncMeno();
+</script>
 {% endblock %}
