@@ -84,9 +84,10 @@ BASE_FEATS = ["age", "female", "bmi", "supplement"]
 
 SUN_FEATS = BASE_FEATS + ["outdoor_min", "skin_react"]
 
-# Project model: retain all health/lifestyle inputs so user YES/NO answers can reach the ML model.
-# "bone" is deliberately context-only because weak bones/osteoporosis is not a direct measurement of serum 25(OH)D.
-POOL = ["kidney", "liver", "thyroid", "diabetes", "smoker", "milk", "alcohol_week", "heavy_drinker"]
+# Health/lifestyle answers are handled by train_health_adjustments.py.  Keep
+# this legacy trainer's pool empty so rerunning it cannot reintroduce
+# double-counting into the project model.
+POOL = []
 CONTEXT_ONLY = ["bone"]
 
 BINARY = ["kidney", "liver", "thyroid", "diabetes", "bone", "smoker", "heavy_drinker"]
@@ -542,11 +543,7 @@ def make_report(title, inputs, y, pred):
 # ------------------------------------------------------------------ one model
 
 def run_scope(key, X, y, start, title, age_range=None):
-    """Train the project model with every prediction input and validate it against the old baseline.
-
-    The final model intentionally keeps all features in POOL so profile YES/NO answers are genuine
-    ML inputs. We do not add hand-written residual corrections after prediction.
-    """
+    """Train the core model and validate it against the old baseline."""
     print("\n" + "=" * 78)
     print("%s | %d people" % (title, len(y)))
     print("=" * 78)

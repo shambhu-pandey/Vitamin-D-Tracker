@@ -1,0 +1,204 @@
+{
+  "description": "Training-set residual contrasts after the core Gradient Boosting model.",
+  "unit": "nmol/L",
+  "target_valid_range_nmol": [
+    9.37,
+    318.0
+  ],
+  "MAX_SINGLE_HEALTH_DEDUCTION_NMOL": 2.0,
+  "MAX_HEALTH_DEDUCTION_NMOL": 4.0,
+  "experimental_milk_bonus_nmol": 0.0,
+  "experimental_milk_bonus_by_condition": {
+    "never": 0.0,
+    "rarely": 1.0,
+    "sometimes": 1.5,
+    "every_day": 2.5
+  },
+  "milk_bonus_status": "Experimental academic demo assumptions: rarely +1.0, sometimes +1.5, every day +2.5 nmol/L. Not scientifically validated; fortification and serving size vary.",
+  "cap_method": "Binary deductions are positive magnitudes, limited to 2.0 nmol/L individually and 4.0 nmol/L combined. The provisional UI values below are 1.0, 0.5, 1.5, 1.0, 0.5 and 1.0 nmol/L, then the combined cap is applied.",
+  "cap_status": "Experimental academic UI heuristics; not medically validated thresholds.",
+  "residual_method": "Five-fold out-of-fold residuals from core Gradient Boosting, random_state 42. Negative estimates are shrunk by max(0, abs(raw contrast) - standard error); non-negative observed associations receive zero binary penalty.",
+  "binary": {
+    "kidney": {
+      "adjustment": 1.0,
+      "experimental_override": true,
+      "validation_supported": false,
+      "applied_method": "Fixed provisional YES deduction; not the raw NHANES contrast.",
+      "raw_residual_contrast": 4.846,
+      "standard_error": 2.466,
+      "shrinkage_rule": "negative effect beyond one standard error; otherwise zero",
+      "yes_mean_residual": 4.725,
+      "no_mean_residual": -0.121,
+      "n_valid": 5298,
+      "n_yes": 170,
+      "n_no": 5128,
+      "missing": 298,
+      "reliable": false,
+      "reason": "Observed held-out association was non-negative; no negative binary penalty applied."
+    },
+    "liver": {
+      "adjustment": 0.5,
+      "experimental_override": true,
+      "validation_supported": false,
+      "applied_method": "Fixed provisional YES deduction; not the raw NHANES contrast.",
+      "raw_residual_contrast": 3.133,
+      "standard_error": 1.943,
+      "shrinkage_rule": "negative effect beyond one standard error; otherwise zero",
+      "yes_mean_residual": 3.044,
+      "no_mean_residual": -0.09,
+      "n_valid": 5295,
+      "n_yes": 212,
+      "n_no": 5083,
+      "missing": 301,
+      "reliable": false,
+      "reason": "Observed held-out association was non-negative; no negative binary penalty applied."
+    },
+    "thyroid": {
+      "adjustment": 1.5,
+      "experimental_override": true,
+      "validation_supported": false,
+      "applied_method": "Fixed provisional YES deduction; not the raw NHANES contrast.",
+      "raw_residual_contrast": 5.895,
+      "standard_error": 1.26,
+      "shrinkage_rule": "negative effect beyond one standard error; otherwise zero",
+      "yes_mean_residual": 5.293,
+      "no_mean_residual": -0.603,
+      "n_valid": 5294,
+      "n_yes": 554,
+      "n_no": 4740,
+      "missing": 302,
+      "reliable": false,
+      "reason": "Observed held-out association was non-negative; no negative binary penalty applied."
+    },
+    "diabetes": {
+      "adjustment": 1.0,
+      "experimental_override": true,
+      "validation_supported": false,
+      "applied_method": "Fixed provisional YES deduction; not the raw NHANES contrast.",
+      "raw_residual_contrast": 2.088,
+      "standard_error": 1.088,
+      "shrinkage_rule": "negative effect beyond one standard error; otherwise zero",
+      "yes_mean_residual": 1.83,
+      "no_mean_residual": -0.259,
+      "n_valid": 5593,
+      "n_yes": 667,
+      "n_no": 4926,
+      "missing": 3,
+      "reliable": false,
+      "reason": "Observed held-out association was non-negative; no negative binary penalty applied."
+    },
+    "bone": {
+      "adjustment": 0.5,
+      "experimental_override": true,
+      "validation_supported": false,
+      "applied_method": "Fixed provisional YES deduction; not the raw NHANES contrast.",
+      "raw_residual_contrast": 6.157,
+      "standard_error": 1.871,
+      "shrinkage_rule": "negative effect beyond one standard error; otherwise zero",
+      "yes_mean_residual": 5.738,
+      "no_mean_residual": -0.42,
+      "n_valid": 3495,
+      "n_yes": 299,
+      "n_no": 3196,
+      "missing": 2101,
+      "reliable": false,
+      "reason": "Observed held-out association was non-negative; no negative binary penalty applied."
+    },
+    "smoker": {
+      "adjustment": 1.0,
+      "experimental_override": true,
+      "validation_supported": false,
+      "applied_method": "Fixed provisional YES deduction; not the shrunk raw NHANES contrast.",
+      "raw_residual_contrast": -0.968,
+      "standard_error": 0.857,
+      "shrinkage_rule": "negative effect beyond one standard error; otherwise zero",
+      "yes_mean_residual": -0.794,
+      "no_mean_residual": 0.175,
+      "n_valid": 5595,
+      "n_yes": 1112,
+      "n_no": 4483,
+      "missing": 1,
+      "reliable": true,
+      "reason": "Negative observational contrast shrunk by its standard error."
+    }
+  },
+  "alcohol": {
+    "none": {
+      "adjustment": 0.0,
+      "raw_residual_contrast": 0.0,
+      "n_valid": 4647,
+      "n_category": 1198,
+      "missing": 949,
+      "reliable": true,
+      "reason": "Compared with no alcohol; observational and not causal."
+    },
+    "1_to_7": {
+      "adjustment": 2.438,
+      "raw_residual_contrast": 2.438,
+      "n_valid": 4647,
+      "n_category": 2865,
+      "missing": 949,
+      "reliable": true,
+      "reason": "Compared with no alcohol; observational and not causal."
+    },
+    "8_to_14": {
+      "adjustment": 3.206,
+      "raw_residual_contrast": 3.206,
+      "n_valid": 4647,
+      "n_category": 364,
+      "missing": 949,
+      "reliable": true,
+      "reason": "Compared with no alcohol; observational and not causal."
+    },
+    "15_plus": {
+      "adjustment": -0.043,
+      "raw_residual_contrast": -0.043,
+      "n_valid": 4647,
+      "n_category": 220,
+      "missing": 949,
+      "reliable": true,
+      "reason": "Compared with no alcohol; observational and not causal."
+    }
+  },
+  "milk": {
+    "never": {
+      "adjustment": 0.0,
+      "observed_residual_contrast": 0.0,
+      "n_valid": 4532,
+      "n_category": 0,
+      "missing": 1064,
+      "reliable": false,
+      "reason": "No adjustment: category contrasts are not consistently directional."
+    },
+    "rarely": {
+      "adjustment": 0.0,
+      "observed_residual_contrast": -3.307,
+      "n_valid": 4532,
+      "n_category": 966,
+      "missing": 1064,
+      "reliable": false,
+      "reason": "No adjustment: category contrasts are not consistently directional."
+    },
+    "sometimes": {
+      "adjustment": 0.0,
+      "observed_residual_contrast": -1.876,
+      "n_valid": 4532,
+      "n_category": 1598,
+      "missing": 1064,
+      "reliable": false,
+      "reason": "No adjustment: category contrasts are not consistently directional."
+    },
+    "every_day": {
+      "adjustment": 0.0,
+      "observed_residual_contrast": 3.147,
+      "n_valid": 4532,
+      "n_category": 1968,
+      "missing": 1064,
+      "reliable": false,
+      "reason": "No adjustment: category contrasts are not consistently directional."
+    }
+  },
+  "rows_total": 5596,
+  "rows_core_training": 4476,
+  "rows_sun_training": 2864
+}

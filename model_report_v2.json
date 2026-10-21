@@ -4,7 +4,7 @@
    "base": {
     "title": "Basic model",
     "people": 5596,
-    "inputs": "age, sex, BMI, supplement, kidney disease, liver condition, thyroid problem, diabetes, current smoker, milk intake, alcohol per week, heavy drinking (14+ drinks a week) (ages 18-80)",
+    "inputs": "age, sex, BMI, supplement (health answers are separate heuristic adjustments) (ages 18-80)",
     "mae": 18.3,
     "r2": 0.261,
     "w10": 35,
@@ -116,7 +116,7 @@
    "sun": {
     "title": "Sun-habits model",
     "people": 3581,
-    "inputs": "age, sex, BMI, supplement, time outdoors, skin reaction, kidney disease, liver condition, thyroid problem, diabetes, current smoker, milk intake, alcohol per week, heavy drinking (14+ drinks a week) (ages 20-59)",
+    "inputs": "age, sex, BMI, supplement, time outdoors, skin reaction (health answers are separate heuristic adjustments) (ages 20-59)",
     "mae": 17.1,
     "r2": 0.209,
     "w10": 37,

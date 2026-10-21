@@ -28,6 +28,7 @@ from contextlib import closing
 
 from datetime import datetime, timedelta
 
+from math import exp, log
 from functools import lru_cache, wraps
 
 
@@ -82,6 +83,11 @@ NMOL_PER_100IU = 2.0    # literature: \~2 nmol/L rise in 25(OH)D per 100 IU/day 
 
 MAX_GOAL_IU = 2000      # safety cap for the daily sun goal
 
+# 25(OH)D commonly has a roughly 2-3 week half-life; 21 days gives a
+# gradual response while reaching a new plateau in roughly 8-12 weeks.
+VITAMIN_D_HALF_LIFE_DAYS = 21.0
+NMOL_PER_100IU_RESPONSE = 1.0
+
 MODEL_MIN_AGE, MODEL_MAX_AGE = 18, 80     # NHANES adults (80 means "80 or older")
 
 
@@ -122,23 +128,48 @@ POSTMENO_SKIN_FACTOR = 0.90 # extra reduction for women after menopause (estroge
 
 
 
-# Conservative app-level corrections to make the four health answers visible in the estimate.
-
-# These are heuristic, not clinical treatment rules; a blood test and clinician's advice should
-
-# take priority. They are deliberately small so they do not overwhelm the model's uncertainty.
-
-MANUAL_ADJ_NMOL = {
-
-    "kidney": -0.5,
-
-    "liver": 0.5,
-
-    "thyroid": -0.5,
-
-    "diabetes": 0.5,
-
+# ---------------------------------------------------------------- Health adjustment layer
+# This is a configurable, project-specific heuristic.  It is not clinically
+# validated and must not be presented as a treatment effect.
+HEALTH_ADJUSTMENTS_FILE = os.path.join(BASE, "health_adjustments.json")
+HEALTH_ADJUSTMENTS = {
+    "target_valid_range_nmol": [9.37, 318.0],
+    "MAX_SINGLE_HEALTH_DEDUCTION_NMOL": 2.0,
+    "MAX_HEALTH_DEDUCTION_NMOL": 4.0,
+    "binary": {}, "alcohol": {}, "milk": {},
 }
+try:
+    with open(HEALTH_ADJUSTMENTS_FILE, encoding="utf-8") as _f:
+        HEALTH_ADJUSTMENTS.update(json.load(_f))
+except FileNotFoundError:
+    print("Health adjustment file not found; health adjustments are zero.")
+except (OSError, ValueError) as e:
+    print("Health adjustment file not used:", e)
+
+_hard_single_deduction_limit = 2.0
+_hard_total_deduction_limit = 4.0
+_single_limit = float(HEALTH_ADJUSTMENTS.get(
+    "MAX_SINGLE_HEALTH_DEDUCTION_NMOL", _hard_single_deduction_limit))
+_total_limit = float(HEALTH_ADJUSTMENTS.get(
+    "MAX_HEALTH_DEDUCTION_NMOL", _hard_total_deduction_limit))
+HEALTH_ADJUSTMENTS["MAX_SINGLE_HEALTH_DEDUCTION_NMOL"] = min(
+    max(_single_limit, 0.0), _hard_single_deduction_limit)
+HEALTH_ADJUSTMENTS["MAX_HEALTH_DEDUCTION_NMOL"] = min(
+    max(_total_limit, 0.0), _hard_total_deduction_limit)
+_milk_bonus_values = HEALTH_ADJUSTMENTS.get(
+    "experimental_milk_bonus_by_condition", {})
+if isinstance(_milk_bonus_values, dict):
+    HEALTH_ADJUSTMENTS["experimental_milk_bonus_by_condition"] = {
+        str(_label): min(max(float(_value), 0.0), 10.0)
+        for _label, _value in _milk_bonus_values.items()
+    }
+else:
+    HEALTH_ADJUSTMENTS["experimental_milk_bonus_by_condition"] = {}
+for _name, _item in HEALTH_ADJUSTMENTS.get("binary", {}).items():
+    _value = float(_item.get("adjustment", 0.0))
+    _item["adjustment"] = min(
+        max(_value, 0.0),
+        HEALTH_ADJUSTMENTS["MAX_SINGLE_HEALTH_DEDUCTION_NMOL"])
 
 
 
@@ -246,6 +277,8 @@ MODEL_REPORT = {"models": {
 
 }}
 
+DEFICIENCY_REPORT = {}
+
 
 
 # model_report_v2.json (written by train_v2.py) replaces the numbers above with the ones of the new models
@@ -271,6 +304,61 @@ except FileNotFoundError:
 except Exception as e:
 
     print("model_report_v2.json NOT used:", e)
+
+try:
+    with open(os.path.join(BASE, "deficiency_validation_report.json"),
+              encoding="utf-8") as _f:
+        DEFICIENCY_REPORT = json.load(_f)
+except FileNotFoundError:
+    pass
+except Exception as e:
+    print("deficiency_validation_report.json NOT used:", e)
+
+SCREENING_THRESHOLDS = {}
+SCREENING_VALIDATION = {}
+for _key, _result in DEFICIENCY_REPORT.get("models", {}).items():
+    _screening = _result.get("models", {}).get("regression_threshold")
+    if _screening and _screening.get("threshold") is not None:
+        SCREENING_THRESHOLDS[_key] = float(_screening["threshold"])
+        SCREENING_VALIDATION[_key] = _screening
+if SCREENING_THRESHOLDS:
+    FLAG_CUT.update(SCREENING_THRESHOLDS)
+    FLAG_STATS.update({
+        _key: (
+            float(_metrics.get("precision", 0.0)) * 100,
+            float(_metrics.get("recall", 0.0)) * 100,
+        )
+        for _key, _metrics in SCREENING_VALIDATION.items()
+    })
+
+# Keep the original fixed-30-nmol/L diagnostic visible, but separate it from
+# the nested out-of-fold screening results in deficiency_validation_report.json.
+DEFICIENCY_BASELINE = {}
+for _key, _model in MODEL_REPORT.get("models", {}).items():
+    _cut = next(
+        (c for c in _model.get("cuts", [])
+         if c.get("q", "").startswith("Below 30 nmol/L")),
+        None,
+    )
+    _validation_model = DEFICIENCY_REPORT.get("models", {}).get(_key, {})
+    _actual = int(round(
+        _validation_model.get("people", 0)
+        * _validation_model.get("prevalence", 0)
+    ))
+    if _cut is not None:
+        DEFICIENCY_BASELINE[_key] = {
+            "threshold": 30.0,
+            "actual_deficient": _actual,
+            "predicted_deficient": 0,
+            "true_positives": 0,
+            "false_positives": 0,
+            "false_negatives": _actual,
+            "precision": _cut.get("prec", 0.0) / 100,
+            "recall": _cut.get("rec", 0.0) / 100,
+            "specificity": _cut.get("spec", 0.0) / 100,
+            "f1": _cut.get("f1", 0.0) / 100,
+            "roc_auc": _cut.get("auc"),
+        }
 
 
 
@@ -393,17 +481,105 @@ def health_values(p):
     alc = ALCOHOL_WEEK.get(p.get("alcohol"), 0.0)
 
     milk = p.get("milk")
+    try:
+        milk_value = float(MILK_DEFAULT if milk is None else milk)
+    except (TypeError, ValueError):
+        milk_value = float(MILK_DEFAULT)
 
     return {"kidney": b("kidney"), "liver": b("liver"), "thyroid": b("thyroid"), "diabetes": b("diabetes"),
 
-            "bone": b("bone"), "smoker": b("smoker"), "milk": float(MILK_DEFAULT if milk is None else milk),
+            "bone": b("bone"), "smoker": b("smoker"), "milk": milk_value,
 
             "alcohol_week": alc, "heavy_drinker": 1.0 if alc >= 14 else 0.0,
 
             "menopause": 1.0 if postmenopausal(p) else 0.0}
 
 
+def health_adjustment_for(p):
+    """Return binary deduction, alcohol adjustment, milk bonus, and audit details."""
+    binary_details = []
+    binary_values = []
+    selected = lambda value: value in (1, True, "1", "yes")
+    overlap = selected(p.get("kidney")) and selected(p.get("diabetes"))
+    single_cap = float(HEALTH_ADJUSTMENTS["MAX_SINGLE_HEALTH_DEDUCTION_NMOL"])
+    details = []
+    for name in ("kidney", "liver", "thyroid", "diabetes", "bone", "smoker"):
+        if not selected(p.get(name)):
+            continue
+        item = HEALTH_ADJUSTMENTS.get("binary", {}).get(name, {})
+        configured = float(item.get("adjustment", 0.0))
+        applied = min(max(configured, 0.0), single_cap)
+        binary_values.append(configured)
+        binary_details.append({"input": name, "configured": configured,
+                               "value": applied,
+                               "reliable": bool(item.get("reliable", False)),
+                               "experimental_override": bool(
+                                   item.get("experimental_override", False)),
+                               "validation_supported": bool(
+                                   item.get("validation_supported", False))})
 
+    # Kidney disease and diabetes overlap in renal/metabolic pathways. Do not
+    # stack both estimates; retain the larger configured penalty and document
+    # the suppressed component in the per-input display.
+    if overlap:
+        kidney = next(v for v in binary_details if v["input"] == "kidney")
+        diabetes = next(v for v in binary_details if v["input"] == "diabetes")
+        if diabetes["configured"] <= kidney["configured"]:
+            diabetes["value"] = 0.0
+            diabetes["overlap_suppressed"] = "kidney disease"
+        else:
+            kidney["value"] = 0.0
+            kidney["overlap_suppressed"] = "diabetes"
+
+    binary_raw = sum(v["value"] for v in binary_details)
+    cap = float(HEALTH_ADJUSTMENTS["MAX_HEALTH_DEDUCTION_NMOL"])
+    binary_applied = min(binary_raw, cap)
+    scale = binary_applied / binary_raw if binary_raw > cap else 1.0
+    for detail in binary_details:
+        detail["value"] = round(detail["value"] * scale, 3)
+        details.append(detail)
+
+    alcohol_adjustment = 0.0
+
+    alcohol_labels = ("none", "1_to_7", "8_to_14", "15_plus")
+    alcohol_index = int(p.get("alcohol", 0) or 0)
+    if 0 <= alcohol_index < len(alcohol_labels):
+        label = alcohol_labels[alcohol_index]
+        item = HEALTH_ADJUSTMENTS.get("alcohol", {}).get(label, {})
+        value = float(item.get("adjustment", 0.0))
+        alcohol_adjustment += value
+        if value:
+            details.append({"input": "alcohol", "value": round(value, 3),
+                            "reliable": bool(item.get("reliable", False)),
+                            "experimental_override": bool(
+                                item.get("experimental_override", False))})
+
+    milk_labels = ("never", "rarely", "sometimes", "every_day")
+    milk_value = p.get("milk")
+    milk_bonus = 0.0
+    if milk_value is not None:
+        try:
+            milk_index = int(milk_value)
+        except (TypeError, ValueError):
+            milk_index = -1
+        if 0 <= milk_index < len(milk_labels):
+            milk_label = milk_labels[milk_index]
+            milk_bonus = float(HEALTH_ADJUSTMENTS.get(
+                "experimental_milk_bonus_by_condition", {}).get(milk_label, 0.0))
+            if milk_bonus:
+                details.append({
+                    "input": "milk", "value": round(milk_bonus, 3),
+                    "bonus": True, "experimental_override": True,
+                    "label": "experimental demo bonus",
+                })
+    return binary_applied, alcohol_adjustment, milk_bonus, details, {
+        "binary_configured_total": round(sum(binary_values), 3),
+        "binary_overlap_adjusted_total": round(binary_raw, 3),
+        "binary_applied_total": round(binary_applied, 3),
+        "max_single_health_deduction": round(single_cap, 3),
+        "max_health_deduction": round(cap, 3),
+        "cap_applied": bool(binary_raw > cap),
+    }
 
 
 def predict_for(p):
@@ -460,13 +636,16 @@ def predict_for(p):
 
 
 
-    # Health/lifestyle effects come only from the trained ML model. No post-hoc corrections.
     corr_txt = []
 
     def lvl(f):
         return max(_level(key, tuple(f[c] for c in m["features"])), 0.0)
 
-    level = lvl(feat)
+    original_level = lvl(feat)
+    total_deduction, alcohol_adjustment, milk_bonus, adjustment_details, adjustment_summary = health_adjustment_for(p)
+    valid_lo, valid_hi = HEALTH_ADJUSTMENTS.get("target_valid_range_nmol", [0.0, 400.0])
+    level = min(max(original_level - total_deduction + alcohol_adjustment + milk_bonus,
+                   float(valid_lo)), float(valid_hi))
 
     what_if = None
 
@@ -553,6 +732,7 @@ def predict_for(p):
     flag_cut = FLAG_CUT[key]
 
     flag_prec, flag_rec = FLAG_STATS[key]
+    screening_validation = SCREENING_VALIDATION.get(key)
 
     pct = lambda v: round(min(max(v, 0.0), 120.0) / 120.0 * 100, 1)     # position on the 0-120 scale
 
@@ -560,9 +740,17 @@ def predict_for(p):
 
 
 
-    return {"level": round(level, 1), "low": round(max(level - m["mae"], 0), 1),
+    return {    "level": round(level, 1), "original_level": round(original_level, 1),
+    "health_adjustment": round(-total_deduction + alcohol_adjustment + milk_bonus, 1),
+    "total_deduction": round(total_deduction, 1),
+    "milk_bonus": round(milk_bonus, 1),
+    "alcohol_adjustment": round(alcohol_adjustment, 1),
+    "adjustment_details": adjustment_details,
+    "adjustment_summary": adjustment_summary,
+    "prediction_bounds": [round(float(valid_lo), 2), round(float(valid_hi), 2)],
+    "level": round(level, 1), "low": round(max(level - m["mae"], float(valid_lo)), 1),
 
-            "high": round(level + m["mae"], 1), "gap": round(gap, 1), "gap_iu": gap_iu,
+            "high": round(min(level + m["mae"], float(valid_hi)), 1), "gap": round(gap, 1), "gap_iu": gap_iu,
 
             "rda": rda, "goal_iu": goal, "target": TARGET_NMOL, "mae": round(m["mae"], 1),
 
@@ -570,11 +758,14 @@ def predict_for(p):
 
             "model_used": key, "outdoor_min": round(outdoor), "extra_inputs": [LABELS_FRIENDLY.get(c, c) for c in extra_inputs],
 
-            "corrections": [],
+            "corrections": ["health heuristic: -%.1f nmol/L binary deduction" % total_deduction]
+            if total_deduction else [],
 
             "skin_react": int(feat["skin_react"]), "what_if": what_if, "notes": notes,
 
             "flag": level < flag_cut, "flag_cut": flag_cut, "flag_prec": flag_prec, "flag_rec": flag_rec,
+            "medical_deficiency_cutoff": 30.0,
+            "screening_validation": screening_validation,
 
             "g_pos": pct(level), "g_lo": g_lo, "g_w": round(g_hi - g_lo, 1)}
 
@@ -595,7 +786,126 @@ def personal_goal(p):
     return rda_goal(p["age"])
 
 
+def trajectory_for(uid, p, days=7):
+    """Estimate level changes from explicitly logged supplement adherence and sun sessions.
 
+    This is a planning estimate, not a replacement for a 25(OH)D blood test.  Unlogged
+    supplement days are deliberately excluded rather than assumed to be missed or taken.
+    """
+    prediction = predict_for(p)
+    if prediction is None:
+        return None
+    goal = prediction["goal_iu"]
+    days = days if days in (1, 7, 30, 60, 90, 180, 365) else 7
+    today = datetime.now().date()
+    requested_start = today - timedelta(days=days - 1)
+    start = requested_start
+    baseline = prediction["level"]
+    baseline_date = start
+    baseline_source = "model prediction"
+    registration_date = None
+    registration_level = None
+    end = today + timedelta(days=days)
+    with closing(db()) as c:
+        user = c.execute(
+            "SELECT created_at, initial_level, initial_level_at FROM users WHERE id=?",
+            (uid,),
+        ).fetchone()
+        if user:
+            registration_date = datetime.fromtimestamp(user["created_at"]).date()
+            if user["initial_level"] is not None:
+                baseline = float(user["initial_level"])
+                registration_level = baseline
+                baseline_date = datetime.fromtimestamp(
+                    user["initial_level_at"] or user["created_at"]
+                ).date()
+                baseline_source = "registration estimate"
+            elif get_profile(uid, c) is not None:
+                # Older accounts predate the registration snapshot column. Store a
+                # one-time baseline so their progress also has a stable start point.
+                baseline = prediction["level"]
+                registration_level = baseline
+                baseline_date = registration_date
+                baseline_source = "registration estimate"
+                c.execute(
+                    "UPDATE users SET initial_level=?, initial_level_at=? WHERE id=?",
+                    (baseline, user["created_at"], uid),
+                )
+        lab = c.execute(
+            "SELECT taken_on, value_nmol FROM lab_results WHERE user_id=? "
+            "ORDER BY taken_on DESC, id DESC LIMIT 1", (uid,)
+        ).fetchone()
+        if lab:
+            baseline = float(lab["value_nmol"])
+            baseline_date = datetime.strptime(lab["taken_on"], "%Y-%m-%d").date()
+            baseline_source = "latest lab"
+        # Never simulate decay before the date represented by the baseline.
+        # Otherwise a new account can lose several nmol/L during the calendar
+        # days before registration, even though it had no account or adherence
+        # history during that period.
+        if baseline_date > start:
+            start = baseline_date
+        logged = {
+            r["day"]: r for r in c.execute(
+                "SELECT day, taken, dose_iu FROM vitamin_d_adherence "
+                "WHERE user_id=? AND day>=? AND day<=?",
+                (uid, start.isoformat(), end.isoformat()),
+            )
+        }
+        sun = {}
+        for r in c.execute(
+            "SELECT start_ts, iu FROM sun_sessions "
+            "WHERE user_id=? AND end_ts IS NOT NULL AND start_ts>=? AND start_ts<=?",
+            (uid, datetime.combine(start, datetime.min.time()).timestamp(), time.time()),
+        ):
+            day = datetime.fromtimestamp(r["start_ts"]).date().isoformat()
+            sun[day] = sun.get(day, 0.0) + max(float(r["iu"]), 0.0)
+
+    decay = 1.0 - exp(-log(2.0) / VITAMIN_D_HALF_LIFE_DAYS)
+    level = baseline
+    observed_days = 0
+    points = []
+    for offset in range((end - start).days + 1):
+        day_date = start + timedelta(days=offset)
+        day = day_date.isoformat()
+        day_logged = day in logged
+        if day_logged:
+            supplement_iu = logged[day]["dose_iu"] if logged[day]["taken"] else 0
+            observed_days += 1
+        else:
+            # A missing record provides no evidence of supplement intake. This
+            # intentionally lets an absence of sun/exposure reduce the estimate;
+            # users can record a taken dose to show maintenance input.
+            supplement_iu = 0
+        sun_iu = sun.get(day, 0.0)
+        daily_iu = supplement_iu + sun_iu
+        # No recorded input permits gradual loss. Any recorded sun or dose
+        # contributes positively; the bounded shift prevents indefinite growth.
+        shift = -15.0 if daily_iu <= 0 else min(
+            35.0, daily_iu / 100.0 * NMOL_PER_100IU_RESPONSE
+        )
+        target = max(0.0, min(120.0, baseline + shift))
+        if day_date >= requested_start:
+            points.append({"date": day, "level": round(level, 1),
+                           "sun_iu": round(sun.get(day, 0.0)),
+                           "dose_iu": supplement_iu if day_logged else None,
+                           "projected": day_date > today})
+        level += (target - level) * decay
+
+    return {
+        "baseline": round(baseline, 1),
+        "baseline_source": baseline_source,
+        "registration_date": registration_date.isoformat() if registration_date else None,
+        "registration_level": (
+            round(registration_level, 1) if registration_level is not None else None
+        ),
+        "current": next((x["level"] for x in points if x["date"] == today.isoformat()), round(level, 1)),
+        "observed_days": observed_days,
+        "goal_iu": goal,
+        "points": points,
+        "half_life_days": int(VITAMIN_D_HALF_LIFE_DAYS),
+        "needs_adherence": today.isoformat() not in logged,
+    }
 
 
 def capacity_table(p, goal):
@@ -855,8 +1165,9 @@ def init_db():
                 name          TEXT NOT NULL,
 
                 password_hash TEXT NOT NULL,
-
-                created_at    REAL NOT NULL
+                created_at    REAL NOT NULL,
+                initial_level REAL,
+                initial_level_at REAL
 
             );
 
@@ -931,7 +1242,6 @@ def init_db():
             );
 
             """
-
         )
 
         # small migrations for older databases
@@ -941,6 +1251,8 @@ def init_db():
             "ALTER TABLE users ADD COLUMN auto_mode INTEGER NOT NULL DEFAULT 1",
 
             "ALTER TABLE users ADD COLUMN auto_hold INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN initial_level REAL",
+            "ALTER TABLE users ADD COLUMN initial_level_at REAL",
 
             "ALTER TABLE sun_sessions ADD COLUMN auto INTEGER NOT NULL DEFAULT 0",
 
@@ -976,6 +1288,22 @@ def init_db():
 
                 pass  # column already exists
 
+        c.commit()
+    init_adherence()
+
+
+def init_adherence():
+    with closing(db()) as c:
+        c.execute(
+            "CREATE TABLE IF NOT EXISTS vitamin_d_adherence("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,"
+            "day TEXT NOT NULL,"
+            "taken INTEGER NOT NULL,"
+            "dose_iu INTEGER NOT NULL,"
+            "created_at REAL NOT NULL,"
+            "UNIQUE(user_id, day))"
+        )
         c.commit()
 
 
@@ -1419,11 +1747,21 @@ def dashboard():
     cap = capacity_table(p, personal_goal(p)) if p else None
 
     return render_template("dashboard.html", p=p, pred=predict_for(p) if p else None,
-
                            needs_update=needs_update, cap=cap, report=MODEL_REPORT)
 
 
-
+@app.get("/progress")
+@login_required
+def progress():
+    p = get_profile(g.user["id"])
+    if p is None:
+        flash("Please set up your profile first.")
+        return redirect(url_for("profile"))
+    prediction = predict_for(p)
+    if prediction is None:
+        flash("A progress estimate is not available for this profile.")
+        return redirect(url_for("dashboard"))
+    return render_template("progress.html", p=p, pred=prediction)
 
 
 # ---------------------------------------------------------------- about + blood-test log
@@ -1431,8 +1769,61 @@ def dashboard():
 @app.get("/about")
 
 def about():
+    return render_template("about.html", deficiency_report=DEFICIENCY_REPORT,
+                           deficiency_baseline=DEFICIENCY_BASELINE)
 
-    return render_template("about.html")
+
+@app.get("/api/trajectory")
+@login_required
+def trajectory():
+    p = get_profile(g.user["id"])
+    if p is None:
+        return jsonify(error="profile"), 400
+    try:
+        days = int(request.args.get("days", 7))
+    except ValueError:
+        days = 7
+    result = trajectory_for(g.user["id"], p, days)
+    if result is None:
+        return jsonify(error="prediction unavailable"), 400
+    return jsonify(result)
+
+
+@app.post("/api/adherence")
+@login_required
+def adherence():
+    p = get_profile(g.user["id"])
+    if p is None:
+        return jsonify(error="profile"), 400
+    data = request.get_json(silent=True) or {}
+    day = data.get("day", datetime.now().date().isoformat())
+    try:
+        d = datetime.strptime(day, "%Y-%m-%d").date()
+        taken = 1 if bool(data.get("taken")) else 0
+        dose_iu = int(data.get("dose_iu", personal_goal(p)))
+    except (TypeError, ValueError):
+        return jsonify(error="day must be YYYY-MM-DD and dose_iu must be an integer"), 400
+    if d != datetime.now().date() or not (0 <= dose_iu <= 10000):
+        return jsonify(error="only today's dose can be logged and it must be 0-10000 IU"), 400
+    with closing(db()) as c:
+        had_profile = c.execute(
+            "SELECT 1 FROM profiles WHERE user_id = ?", (g.user["id"],)
+        ).fetchone() is not None
+        c.execute(
+            "INSERT INTO vitamin_d_adherence(user_id, day, taken, dose_iu, created_at) "
+            "VALUES(?,?,?,?,?) ON CONFLICT(user_id, day) DO UPDATE SET "
+            "taken=excluded.taken, dose_iu=excluded.dose_iu, created_at=excluded.created_at",
+            (g.user["id"], d.isoformat(), taken, dose_iu, time.time()),
+        )
+        if not had_profile:
+            first_prediction = predict_for(get_profile(g.user["id"], c))
+            if first_prediction is not None:
+                c.execute(
+                    "UPDATE users SET initial_level=?, initial_level_at=? WHERE id=?",
+                    (first_prediction["level"], time.time(), g.user["id"]),
+                )
+        c.commit()
+    return jsonify(ok=True, trajectory=trajectory_for(g.user["id"], p))
 
 
 @app.get("/guide")
@@ -2176,9 +2567,7 @@ def history():
 
 
 if __name__ == "__main__":
-
     init_db()
-
     init_labs()
-
+    init_adherence()
     app.run(host="0.0.0.0", port=5000, debug=False)

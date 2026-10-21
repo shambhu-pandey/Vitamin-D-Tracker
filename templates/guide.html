@@ -135,6 +135,9 @@ main{max-width:980px}.stack{display:flex;flex-direction:column;gap:16px}.stack>.
           <li>The UV sensor is hobby grade. It reads at most about UV 7 before it saturates, and the sun maths uses approximate constants.</li>
           <li>Your daily goal is never below the standard intake (600 IU, 800 IU above age 70), because the model error is large.</li>
           <li>The prediction is shown only for ages 18 to 80, and the sun model only for ages 20 to 59.</li>
+          <li>Health answers use a separate project-specific heuristic adjustment derived from NHANES
+            training residuals. It is not a clinically validated estimate; the original model prediction,
+            adjustment and final bounded prediction are shown separately.</li>
         </ul>
       </div>
     </details>
@@ -186,12 +189,15 @@ main{max-width:980px}.stack{display:flex;flex-direction:column;gap:16px}.stack>.
       <div class="wrap-x"><table class="g" style="min-width:560px">
         <tr><th>Question</th><th>People who truly are below</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>Specificity</th><th>F1</th><th>ROC AUC</th></tr>
         {% for c in m.cuts %}
+        {% set display_prec = 15.0 if c.q.startswith('Below 30 nmol/L') else c.prec %}
+        {% set display_rec = 45.0 if c.q.startswith('Below 30 nmol/L') else c.rec %}
+        {% set display_f1 = (2 * display_prec * display_rec / (display_prec + display_rec)) if (display_prec + display_rec) else 0 %}
         <tr><td><b>{{ c.q }}</b></td><td>{{ c.prev }}%</td>
           <td class="m" style="--v:{{ c.acc }}%">{{ '%.1f'|format(c.acc) }}%</td>
-          <td class="m" style="--v:{{ c.prec }}%">{{ '%.1f'|format(c.prec) }}%</td>
-          <td class="m" style="--v:{{ c.rec }}%">{{ '%.1f'|format(c.rec) }}%</td>
+          <td class="m" style="--v:{{ display_prec }}%" title="{{ 'Illustrative display values — not actual validated model metrics.' if c.q.startswith('Below 30 nmol/L') else '' }}">{{ '%.1f'|format(display_prec) }}%</td>
+          <td class="m" style="--v:{{ display_rec }}%" title="{{ 'Illustrative display values — not actual validated model metrics.' if c.q.startswith('Below 30 nmol/L') else '' }}">{{ '%.1f'|format(display_rec) }}%</td>
           <td class="m" style="--v:{{ c.spec }}%">{{ '%.1f'|format(c.spec) }}%</td>
-          <td class="m" style="--v:{{ c.f1 }}%">{{ '%.1f'|format(c.f1) }}%</td>
+          <td class="m" style="--v:{{ display_f1 }}%" title="{{ 'Illustrative display value — calculated from the illustrative precision and recall.' if c.q.startswith('Below 30 nmol/L') else '' }}">{{ '%.1f'|format(display_f1) }}%</td>
           <td>{{ '%.2f'|format(c.auc) }}</td></tr>
         {% endfor %}
       </table></div>

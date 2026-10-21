@@ -1,0 +1,813 @@
+{
+  "threshold_selection": "inner 3-fold OOF within each outer training fold",
+  "outer_folds": 5,
+  "threshold_target": "F1 with recall tie-break",
+  "models": {
+    "base": {
+      "people": 5596,
+      "prevalence": 0.081,
+      "models": {
+        "regression_threshold": {
+          "actual_deficient": 452,
+          "predicted_deficient": 1204,
+          "true_positives": 202,
+          "false_positives": 1002,
+          "false_negatives": 250,
+          "true_negatives": 4142,
+          "accuracy": 0.776,
+          "precision": 0.168,
+          "recall": 0.447,
+          "specificity": 0.805,
+          "f1": 0.244,
+          "pr_auc": 0.173,
+          "roc_auc": 0.718,
+          "threshold": 54.5,
+          "confidence_intervals_95": {
+            "accuracy": [
+              0.765,
+              0.786
+            ],
+            "precision": [
+              0.148,
+              0.188
+            ],
+            "recall": [
+              0.402,
+              0.491
+            ],
+            "specificity": [
+              0.794,
+              0.816
+            ],
+            "f1": [
+              0.218,
+              0.27
+            ]
+          },
+          "operating_points": [
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 0,
+              "true_positives": 0,
+              "false_positives": 0,
+              "false_negatives": 452,
+              "true_negatives": 5144,
+              "accuracy": 0.919,
+              "precision": 0.0,
+              "recall": 0.0,
+              "specificity": 1.0,
+              "f1": 0.0,
+              "pr_auc": 0.173,
+              "roc_auc": 0.718,
+              "threshold": 30.0
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 20,
+              "true_positives": 10,
+              "false_positives": 10,
+              "false_negatives": 442,
+              "true_negatives": 5134,
+              "accuracy": 0.919,
+              "precision": 0.5,
+              "recall": 0.022,
+              "specificity": 0.998,
+              "f1": 0.042,
+              "pr_auc": 0.173,
+              "roc_auc": 0.718,
+              "threshold": 40.0
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 315,
+              "true_positives": 66,
+              "false_positives": 249,
+              "false_negatives": 386,
+              "true_negatives": 4895,
+              "accuracy": 0.887,
+              "precision": 0.21,
+              "recall": 0.146,
+              "specificity": 0.952,
+              "f1": 0.172,
+              "pr_auc": 0.173,
+              "roc_auc": 0.718,
+              "threshold": 50.0
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 1204,
+              "true_positives": 202,
+              "false_positives": 1002,
+              "false_negatives": 250,
+              "true_negatives": 4142,
+              "accuracy": 0.776,
+              "precision": 0.168,
+              "recall": 0.447,
+              "specificity": 0.805,
+              "f1": 0.244,
+              "pr_auc": 0.173,
+              "roc_auc": 0.718,
+              "threshold": 54.5
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 2833,
+              "true_positives": 359,
+              "false_positives": 2474,
+              "false_negatives": 93,
+              "true_negatives": 2670,
+              "accuracy": 0.541,
+              "precision": 0.127,
+              "recall": 0.794,
+              "specificity": 0.519,
+              "f1": 0.219,
+              "pr_auc": 0.173,
+              "roc_auc": 0.718,
+              "threshold": 60.0
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 3839,
+              "true_positives": 423,
+              "false_positives": 3416,
+              "false_negatives": 29,
+              "true_negatives": 1728,
+              "accuracy": 0.384,
+              "precision": 0.11,
+              "recall": 0.936,
+              "specificity": 0.336,
+              "f1": 0.197,
+              "pr_auc": 0.173,
+              "roc_auc": 0.718,
+              "threshold": 70.0
+            }
+          ],
+          "outer_thresholds": [
+            55.0,
+            57.0,
+            53.0,
+            55.0,
+            52.5
+          ]
+        },
+        "random_forest_balanced": {
+          "actual_deficient": 452,
+          "predicted_deficient": 1446,
+          "true_positives": 219,
+          "false_positives": 1227,
+          "false_negatives": 233,
+          "true_negatives": 3917,
+          "accuracy": 0.739,
+          "precision": 0.151,
+          "recall": 0.485,
+          "specificity": 0.761,
+          "f1": 0.231,
+          "pr_auc": 0.161,
+          "roc_auc": 0.702,
+          "threshold": 0.444,
+          "confidence_intervals_95": {
+            "accuracy": [
+              0.727,
+              0.75
+            ],
+            "precision": [
+              0.134,
+              0.169
+            ],
+            "recall": [
+              0.443,
+              0.528
+            ],
+            "specificity": [
+              0.75,
+              0.773
+            ],
+            "f1": [
+              0.207,
+              0.255
+            ]
+          },
+          "operating_points": [
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 2998,
+              "true_positives": 367,
+              "false_positives": 2631,
+              "false_negatives": 85,
+              "true_negatives": 2513,
+              "accuracy": 0.515,
+              "precision": 0.122,
+              "recall": 0.812,
+              "specificity": 0.489,
+              "f1": 0.213,
+              "pr_auc": 0.161,
+              "roc_auc": 0.702,
+              "threshold": 0.2
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 2345,
+              "true_positives": 313,
+              "false_positives": 2032,
+              "false_negatives": 139,
+              "true_negatives": 3112,
+              "accuracy": 0.612,
+              "precision": 0.133,
+              "recall": 0.692,
+              "specificity": 0.605,
+              "f1": 0.224,
+              "pr_auc": 0.161,
+              "roc_auc": 0.702,
+              "threshold": 0.3
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 1720,
+              "true_positives": 248,
+              "false_positives": 1472,
+              "false_negatives": 204,
+              "true_negatives": 3672,
+              "accuracy": 0.701,
+              "precision": 0.144,
+              "recall": 0.549,
+              "specificity": 0.714,
+              "f1": 0.228,
+              "pr_auc": 0.161,
+              "roc_auc": 0.702,
+              "threshold": 0.4
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 1153,
+              "true_positives": 188,
+              "false_positives": 965,
+              "false_negatives": 264,
+              "true_negatives": 4179,
+              "accuracy": 0.78,
+              "precision": 0.163,
+              "recall": 0.416,
+              "specificity": 0.812,
+              "f1": 0.234,
+              "pr_auc": 0.161,
+              "roc_auc": 0.702,
+              "threshold": 0.5
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 720,
+              "true_positives": 137,
+              "false_positives": 583,
+              "false_negatives": 315,
+              "true_negatives": 4561,
+              "accuracy": 0.84,
+              "precision": 0.19,
+              "recall": 0.303,
+              "specificity": 0.887,
+              "f1": 0.234,
+              "pr_auc": 0.161,
+              "roc_auc": 0.702,
+              "threshold": 0.6
+            }
+          ],
+          "outer_thresholds": [
+            0.24,
+            0.505,
+            0.385,
+            0.62,
+            0.47
+          ]
+        },
+        "hist_gradient_boosting_balanced": {
+          "actual_deficient": 452,
+          "predicted_deficient": 1660,
+          "true_positives": 246,
+          "false_positives": 1414,
+          "false_negatives": 206,
+          "true_negatives": 3730,
+          "accuracy": 0.711,
+          "precision": 0.148,
+          "recall": 0.544,
+          "specificity": 0.725,
+          "f1": 0.233,
+          "pr_auc": 0.171,
+          "roc_auc": 0.701,
+          "threshold": 0.52,
+          "confidence_intervals_95": {
+            "accuracy": [
+              0.699,
+              0.721
+            ],
+            "precision": [
+              0.13,
+              0.165
+            ],
+            "recall": [
+              0.501,
+              0.591
+            ],
+            "specificity": [
+              0.714,
+              0.736
+            ],
+            "f1": [
+              0.208,
+              0.256
+            ]
+          },
+          "operating_points": [
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 3524,
+              "true_positives": 391,
+              "false_positives": 3133,
+              "false_negatives": 61,
+              "true_negatives": 2011,
+              "accuracy": 0.429,
+              "precision": 0.111,
+              "recall": 0.865,
+              "specificity": 0.391,
+              "f1": 0.197,
+              "pr_auc": 0.171,
+              "roc_auc": 0.701,
+              "threshold": 0.2
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 3001,
+              "true_positives": 364,
+              "false_positives": 2637,
+              "false_negatives": 88,
+              "true_negatives": 2507,
+              "accuracy": 0.513,
+              "precision": 0.121,
+              "recall": 0.805,
+              "specificity": 0.487,
+              "f1": 0.211,
+              "pr_auc": 0.171,
+              "roc_auc": 0.701,
+              "threshold": 0.3
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 2444,
+              "true_positives": 322,
+              "false_positives": 2122,
+              "false_negatives": 130,
+              "true_negatives": 3022,
+              "accuracy": 0.598,
+              "precision": 0.132,
+              "recall": 0.712,
+              "specificity": 0.587,
+              "f1": 0.222,
+              "pr_auc": 0.171,
+              "roc_auc": 0.701,
+              "threshold": 0.4
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 1780,
+              "true_positives": 260,
+              "false_positives": 1520,
+              "false_negatives": 192,
+              "true_negatives": 3624,
+              "accuracy": 0.694,
+              "precision": 0.146,
+              "recall": 0.575,
+              "specificity": 0.705,
+              "f1": 0.233,
+              "pr_auc": 0.171,
+              "roc_auc": 0.701,
+              "threshold": 0.5
+            },
+            {
+              "actual_deficient": 452,
+              "predicted_deficient": 1058,
+              "true_positives": 174,
+              "false_positives": 884,
+              "false_negatives": 278,
+              "true_negatives": 4260,
+              "accuracy": 0.792,
+              "precision": 0.164,
+              "recall": 0.385,
+              "specificity": 0.828,
+              "f1": 0.23,
+              "pr_auc": 0.171,
+              "roc_auc": 0.701,
+              "threshold": 0.6
+            }
+          ],
+          "outer_thresholds": [
+            0.565,
+            0.475,
+            0.47,
+            0.575,
+            0.515
+          ]
+        }
+      }
+    },
+    "sun": {
+      "people": 3581,
+      "prevalence": 0.094,
+      "models": {
+        "regression_threshold": {
+          "actual_deficient": 338,
+          "predicted_deficient": 678,
+          "true_positives": 141,
+          "false_positives": 537,
+          "false_negatives": 197,
+          "true_negatives": 2706,
+          "accuracy": 0.795,
+          "precision": 0.208,
+          "recall": 0.417,
+          "specificity": 0.834,
+          "f1": 0.278,
+          "pr_auc": 0.216,
+          "roc_auc": 0.727,
+          "threshold": 51.1,
+          "confidence_intervals_95": {
+            "accuracy": [
+              0.782,
+              0.808
+            ],
+            "precision": [
+              0.176,
+              0.24
+            ],
+            "recall": [
+              0.365,
+              0.469
+            ],
+            "specificity": [
+              0.822,
+              0.847
+            ],
+            "f1": [
+              0.239,
+              0.315
+            ]
+          },
+          "operating_points": [
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 0,
+              "true_positives": 0,
+              "false_positives": 0,
+              "false_negatives": 338,
+              "true_negatives": 3243,
+              "accuracy": 0.906,
+              "precision": 0.0,
+              "recall": 0.0,
+              "specificity": 1.0,
+              "f1": 0.0,
+              "pr_auc": 0.216,
+              "roc_auc": 0.727,
+              "threshold": 30.0
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 22,
+              "true_positives": 7,
+              "false_positives": 15,
+              "false_negatives": 331,
+              "true_negatives": 3228,
+              "accuracy": 0.903,
+              "precision": 0.318,
+              "recall": 0.021,
+              "specificity": 0.995,
+              "f1": 0.039,
+              "pr_auc": 0.216,
+              "roc_auc": 0.727,
+              "threshold": 40.0
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 547,
+              "true_positives": 124,
+              "false_positives": 423,
+              "false_negatives": 214,
+              "true_negatives": 2820,
+              "accuracy": 0.822,
+              "precision": 0.227,
+              "recall": 0.367,
+              "specificity": 0.87,
+              "f1": 0.28,
+              "pr_auc": 0.216,
+              "roc_auc": 0.727,
+              "threshold": 50.0
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1177,
+              "true_positives": 211,
+              "false_positives": 966,
+              "false_negatives": 127,
+              "true_negatives": 2277,
+              "accuracy": 0.695,
+              "precision": 0.179,
+              "recall": 0.624,
+              "specificity": 0.702,
+              "f1": 0.279,
+              "pr_auc": 0.216,
+              "roc_auc": 0.727,
+              "threshold": 54.5
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1917,
+              "true_positives": 274,
+              "false_positives": 1643,
+              "false_negatives": 64,
+              "true_negatives": 1600,
+              "accuracy": 0.523,
+              "precision": 0.143,
+              "recall": 0.811,
+              "specificity": 0.493,
+              "f1": 0.243,
+              "pr_auc": 0.216,
+              "roc_auc": 0.727,
+              "threshold": 60.0
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 2782,
+              "true_positives": 319,
+              "false_positives": 2463,
+              "false_negatives": 19,
+              "true_negatives": 780,
+              "accuracy": 0.307,
+              "precision": 0.115,
+              "recall": 0.944,
+              "specificity": 0.241,
+              "f1": 0.204,
+              "pr_auc": 0.216,
+              "roc_auc": 0.727,
+              "threshold": 70.0
+            }
+          ],
+          "outer_thresholds": [
+            51.5,
+            50.0,
+            53.5,
+            49.0,
+            51.5
+          ]
+        },
+        "random_forest_balanced": {
+          "actual_deficient": 338,
+          "predicted_deficient": 940,
+          "true_positives": 163,
+          "false_positives": 777,
+          "false_negatives": 175,
+          "true_negatives": 2466,
+          "accuracy": 0.734,
+          "precision": 0.173,
+          "recall": 0.482,
+          "specificity": 0.76,
+          "f1": 0.255,
+          "pr_auc": 0.177,
+          "roc_auc": 0.686,
+          "threshold": 0.435,
+          "confidence_intervals_95": {
+            "accuracy": [
+              0.719,
+              0.749
+            ],
+            "precision": [
+              0.149,
+              0.197
+            ],
+            "recall": [
+              0.429,
+              0.535
+            ],
+            "specificity": [
+              0.745,
+              0.775
+            ],
+            "f1": [
+              0.223,
+              0.286
+            ]
+          },
+          "operating_points": [
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 2179,
+              "true_positives": 283,
+              "false_positives": 1896,
+              "false_negatives": 55,
+              "true_negatives": 1347,
+              "accuracy": 0.455,
+              "precision": 0.13,
+              "recall": 0.837,
+              "specificity": 0.415,
+              "f1": 0.225,
+              "pr_auc": 0.177,
+              "roc_auc": 0.686,
+              "threshold": 0.2
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1577,
+              "true_positives": 233,
+              "false_positives": 1344,
+              "false_negatives": 105,
+              "true_negatives": 1899,
+              "accuracy": 0.595,
+              "precision": 0.148,
+              "recall": 0.689,
+              "specificity": 0.586,
+              "f1": 0.243,
+              "pr_auc": 0.177,
+              "roc_auc": 0.686,
+              "threshold": 0.3
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1106,
+              "true_positives": 180,
+              "false_positives": 926,
+              "false_negatives": 158,
+              "true_negatives": 2317,
+              "accuracy": 0.697,
+              "precision": 0.163,
+              "recall": 0.533,
+              "specificity": 0.714,
+              "f1": 0.249,
+              "pr_auc": 0.177,
+              "roc_auc": 0.686,
+              "threshold": 0.4
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 699,
+              "true_positives": 130,
+              "false_positives": 569,
+              "false_negatives": 208,
+              "true_negatives": 2674,
+              "accuracy": 0.783,
+              "precision": 0.186,
+              "recall": 0.385,
+              "specificity": 0.825,
+              "f1": 0.251,
+              "pr_auc": 0.177,
+              "roc_auc": 0.686,
+              "threshold": 0.5
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 387,
+              "true_positives": 77,
+              "false_positives": 310,
+              "false_negatives": 261,
+              "true_negatives": 2933,
+              "accuracy": 0.841,
+              "precision": 0.199,
+              "recall": 0.228,
+              "specificity": 0.904,
+              "f1": 0.212,
+              "pr_auc": 0.177,
+              "roc_auc": 0.686,
+              "threshold": 0.6
+            }
+          ],
+          "outer_thresholds": [
+            0.4,
+            0.47,
+            0.45,
+            0.455,
+            0.4
+          ]
+        },
+        "hist_gradient_boosting_balanced": {
+          "actual_deficient": 338,
+          "predicted_deficient": 1093,
+          "true_positives": 179,
+          "false_positives": 914,
+          "false_negatives": 159,
+          "true_negatives": 2329,
+          "accuracy": 0.7,
+          "precision": 0.164,
+          "recall": 0.53,
+          "specificity": 0.718,
+          "f1": 0.25,
+          "pr_auc": 0.179,
+          "roc_auc": 0.682,
+          "threshold": 0.437,
+          "confidence_intervals_95": {
+            "accuracy": [
+              0.685,
+              0.715
+            ],
+            "precision": [
+              0.142,
+              0.186
+            ],
+            "recall": [
+              0.478,
+              0.577
+            ],
+            "specificity": [
+              0.702,
+              0.733
+            ],
+            "f1": [
+              0.22,
+              0.28
+            ]
+          },
+          "operating_points": [
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1971,
+              "true_positives": 265,
+              "false_positives": 1706,
+              "false_negatives": 73,
+              "true_negatives": 1537,
+              "accuracy": 0.503,
+              "precision": 0.134,
+              "recall": 0.784,
+              "specificity": 0.474,
+              "f1": 0.23,
+              "pr_auc": 0.179,
+              "roc_auc": 0.682,
+              "threshold": 0.2
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1565,
+              "true_positives": 230,
+              "false_positives": 1335,
+              "false_negatives": 108,
+              "true_negatives": 1908,
+              "accuracy": 0.597,
+              "precision": 0.147,
+              "recall": 0.68,
+              "specificity": 0.588,
+              "f1": 0.242,
+              "pr_auc": 0.179,
+              "roc_auc": 0.682,
+              "threshold": 0.3
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 1216,
+              "true_positives": 191,
+              "false_positives": 1025,
+              "false_negatives": 147,
+              "true_negatives": 2218,
+              "accuracy": 0.673,
+              "precision": 0.157,
+              "recall": 0.565,
+              "specificity": 0.684,
+              "f1": 0.246,
+              "pr_auc": 0.179,
+              "roc_auc": 0.682,
+              "threshold": 0.4
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 907,
+              "true_positives": 163,
+              "false_positives": 744,
+              "false_negatives": 175,
+              "true_negatives": 2499,
+              "accuracy": 0.743,
+              "precision": 0.18,
+              "recall": 0.482,
+              "specificity": 0.771,
+              "f1": 0.262,
+              "pr_auc": 0.179,
+              "roc_auc": 0.682,
+              "threshold": 0.5
+            },
+            {
+              "actual_deficient": 338,
+              "predicted_deficient": 600,
+              "true_positives": 117,
+              "false_positives": 483,
+              "false_negatives": 221,
+              "true_negatives": 2760,
+              "accuracy": 0.803,
+              "precision": 0.195,
+              "recall": 0.346,
+              "specificity": 0.851,
+              "f1": 0.249,
+              "pr_auc": 0.179,
+              "roc_auc": 0.682,
+              "threshold": 0.6
+            }
+          ],
+          "outer_thresholds": [
+            0.44,
+            0.245,
+            0.52,
+            0.555,
+            0.425
+          ]
+        }
+      }
+    }
+  }
+}

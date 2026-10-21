@@ -9,7 +9,55 @@ table.h tr:first-child td{color:var(--muted);font-size:12px;font-weight:700}</st
   <p>This app uses <b>two kinds of models</b>. For the things a public survey dataset actually measured, we use a
   statistical model trained on that dataset. For the things the dataset does not contain, we built our own
   research-based model from published sun-exposure rules. We keep the two separate on purpose, and we show which is which.</p>
+  <ol>
+    <li>Your profile is converted to the same units and input encoding used during training.</li>
+    <li>The Gradient Boosting regression model estimates serum 25(OH)D in nmol/L from the core profile
+      features. The sun-habits model additionally uses outdoor exposure and skin reaction when those
+      inputs are available.</li>
+    <li>The original model prediction is kept separate from the configurable health-adjustment layer.
+      Experimental health deductions and milk bonuses are applied once, then the result is clipped to
+      the configured valid target range.</li>
+    <li>The dashboard uses the resulting estimate to show a range label, gap-to-target calculation,
+      approximate IU planning guidance, and sun-exposure guidance. These are planning estimates, not
+      measurements of vitamin D in the blood.</li>
+  </ol>
   <p class="muted">It is an educational project. It is not a medical device, not a blood test and not a diagnosis.</p>
+</div>
+
+<div class="card" id="accuracy">
+  <h2 style="margin-top:0">How accurate is our model?</h2>
+  <p>Vitamin D prediction is a screening estimate, not a blood-test result. The model predicts
+  serum 25-hydroxyvitamin D (25(OH)D) in nmol/L from patterns in the US NHANES 2013-2014
+  survey. It is not trained on Indian participants and cannot replace a laboratory test or
+  clinical advice.</p>
+  <table class="h">
+    <tr><td>Model</td><td>Inputs and evaluation results</td></tr>
+    <tr><td>Basic Gradient Boosting</td><td>Age, sex, BMI and supplementation. 5,596 adults aged 18-80.
+      Mean absolute error (MAE): <b>18.04 nmol/L</b>; RMSE: <b>23.81 nmol/L</b>; R²: <b>0.255</b>.</td></tr>
+    <tr><td>Sun-habits Gradient Boosting</td><td>Basic inputs plus outdoor exposure and skin reaction.
+      3,541 evaluated NHANES rows aged 20-59. MAE: <b>17.39 nmol/L</b>; RMSE:
+      <b>22.74 nmol/L</b>; R²: <b>0.192</b>.</td></tr>
+  </table>
+  <p class="muted">MAE is the typical size of an error in this evaluation; it is not a guaranteed
+  error range. Individual predictions can be substantially higher or lower than the displayed
+  estimate. R² describes how much variation is explained in this dataset, not clinical accuracy.</p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0">How verification was performed</h3>
+  <ol>
+    <li>Checked that both saved artifacts are Gradient Boosting regression models with the expected
+      feature lists and valid regression metrics.</li>
+    <li>Compared predictions with measured NHANES LBXVIDMS values. The sun model achieved MAE
+      <b>17.0 nmol/L</b> versus <b>19.5 nmol/L</b> for an always-average baseline on the
+      verification rows.</li>
+    <li>Checked calibration: groups with higher predicted values had progressively higher observed
+      average vitamin D levels.</li>
+    <li>Checked feature-direction examples, extreme inputs, realistic output ranges, and the
+      Flask prediction path. The current model verification script passed <b>22 of 22 checks</b>.</li>
+  </ol>
+  <p class="muted">These checks show that the software and saved artifacts behave as expected.
+  They do not prove that the model is clinically validated, causal, or accurate for every person.</p>
 </div>
 
 <div class="card">
@@ -30,6 +78,87 @@ table.h tr:first-child td{color:var(--muted);font-size:12px;font-weight:700}</st
     <tr><td>Uncovered skin (10 / 25 / 40 %), sunscreen strength, age factor</td><td>Our own simple assumptions</td><td>Assumption</td></tr>
   </table>
 </div>
+
+{% if deficiency_report and deficiency_report.models %}
+<div class="card">
+  <h3 style="margin-top:0">Deficiency evaluation: two different cutoffs</h3>
+  <p>The medical evaluation target remains <code>LBXVIDMS &lt; 30 nmol/L</code>.
+  That measured value is the definition of deficiency in every table below. The
+  alternative 54.5/51.1 nmol/L cutoffs are prediction screening thresholds only;
+  they do not redefine deficiency and are not clinical diagnostic thresholds.</p>
+
+  {% if deficiency_baseline %}
+  <h4>Original fixed-30-nmol/L regression baseline</h4>
+  <p class="muted">This is the legacy metric: a regression prediction was labelled
+  deficient only when it was below 30 nmol/L. It produced no predicted deficient
+  cases in the current saved-model evaluation.</p>
+  <div class="wrap-x">
+  <table class="h" style="min-width:980px">
+    <tr><td>Scope</td><td>Actual</td><td>Predicted</td><td>TP</td><td>FP</td><td>FN</td><td>Precision</td><td>Recall</td><td>Specificity</td><td>F1</td><td>ROC-AUC</td></tr>
+    {% for key, m in deficiency_baseline.items() %}
+    <tr>
+      <td>{{ key }} / fixed 30 nmol/L<br><span class="muted">prediction cutoff: {{ m.threshold }} nmol/L</span></td>
+      <td>{{ m.actual_deficient }}</td><td>{{ m.predicted_deficient }}</td><td>{{ m.true_positives }}</td><td>{{ m.false_positives }}</td><td>{{ m.false_negatives }}</td>
+      <td>{{ '%.1f' % (m.precision * 100) }}%</td><td>{{ '%.1f' % (m.recall * 100) }}%</td><td>{{ '%.1f' % (m.specificity * 100) }}%</td>
+      <td>{{ '%.1f' % (m.f1 * 100) }}%</td><td>{{ m.roc_auc }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% endif %}
+
+  <h4>Tuned out-of-fold screening results</h4>
+  <p>Thresholds were selected inside each training fold using inner out-of-fold
+  predictions; outer validation folds were kept untouched for reporting. These
+  values are loaded from <code>deficiency_validation_report.json</code>.</p>
+  <div class="wrap-x">
+  <table class="h" style="min-width:980px">
+    <tr><td>Scope / method</td><td>Actual</td><td>Predicted</td><td>TP</td><td>FP</td><td>FN</td><td>Accuracy</td><td>Precision</td><td>Recall</td><td>Specificity</td><td>F1</td><td>PR-AUC</td><td>ROC-AUC</td></tr>
+    {% for key, result in deficiency_report.models.items() %}
+      {% for method, m in result.models.items() %}
+      <tr>
+        <td>{{ key }} / {{ method|replace('_', ' ') }}<br><span class="muted">threshold: {{ m.threshold }}{% if method == 'regression_threshold' %} nmol/L{% else %} probability{% endif %}</span></td>
+        <td>{{ m.actual_deficient }}</td><td>{{ m.predicted_deficient }}</td><td>{{ m.true_positives }}</td><td>{{ m.false_positives }}</td><td>{{ m.false_negatives }}</td>
+        <td>{{ '%.1f' % (m.accuracy * 100) }}%</td>
+        <td>{{ '%.1f' % (m.precision * 100) }}%</td><td>{{ '%.1f' % (m.recall * 100) }}%</td><td>{{ '%.1f' % (m.specificity * 100) }}%</td>
+        <td>{{ '%.1f' % (m.f1 * 100) }}%</td><td>{{ m.pr_auc }}</td><td>{{ m.roc_auc }}</td>
+      </tr>
+      {% endfor %}
+    {% endfor %}
+  </table>
+  </div>
+  <h4>Precision-recall operating points</h4>
+  <p class="muted">Each row is scored on the same untouched outer-fold predictions.
+  Lower thresholds generally increase recall and reduce precision; the selected
+  threshold is chosen inside the training folds rather than from these outer labels.</p>
+  <div class="wrap-x">
+  <table class="h" style="min-width:760px">
+    <tr><td>Scope / method</td><td>Prediction threshold</td><td>Accuracy</td><td>Precision</td><td>Recall</td><td>Specificity</td><td>F1</td></tr>
+    {% for key, result in deficiency_report.models.items() %}
+      {% for method, m in result.models.items() %}
+        {% for point in m.operating_points %}
+        <tr>
+          <td>{{ key }} / {{ method|replace('_', ' ') }}</td>
+          <td>{{ point.threshold }}{% if method == 'regression_threshold' %} nmol/L{% else %} probability{% endif %}</td>
+          <td>{{ '%.1f' % (point.accuracy * 100) }}%</td>
+          <td>{{ '%.1f' % (point.precision * 100) }}%</td>
+          <td>{{ '%.1f' % (point.recall * 100) }}%</td>
+          <td>{{ '%.1f' % (point.specificity * 100) }}%</td>
+          <td>{{ '%.1f' % (point.f1 * 100) }}%</td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    {% endfor %}
+  </table>
+  </div>
+  <p class="muted">The primary selected metrics include bootstrap 95% intervals in the
+  validation report. They describe uncertainty from resampling the outer predictions,
+  not clinical confidence or external-population performance.</p>
+  <p class="muted">The selected thresholds improve recall compared with the fixed
+  prediction cutoff, but create many false positives. This is a screening trade-off,
+  not a diagnosis. Existing regression artifacts remain unchanged.</p>
+</div>
+{% endif %}
 
 <div class="card">
   <h3 style="margin-top:0">What it does not know</h3>

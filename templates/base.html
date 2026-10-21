@@ -744,6 +744,13 @@
       </a>
 
       <a
+        class="{{ 'on' if request.endpoint == 'progress' }}"
+        href="{{ url_for('progress') }}"
+      >
+        Progress
+      </a>
+
+      <a
         class="{{ 'on' if request.endpoint == 'guide' }}"
         href="{{ url_for('guide') }}"
       >
